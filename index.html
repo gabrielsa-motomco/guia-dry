@@ -457,9 +457,9 @@ const CONTACTS = {
   gabrielf:   {nome:'Gabriel Fernando', papel:'Equipe de instalação', tel:'4988062630', grupo:'Equipe de instalação'},
   donlislei:  {nome:'Donlislei', papel:'Equipe de instalação', tel:'4199300097', grupo:'Equipe de instalação'},
   vilmar:     {nome:'Vilmar', papel:'Escalonamento técnico', tel:'4184984246', grupo:'Escalonamento'},
-  douglas:    {nome:'Douglas Fogaça', papel:'Almoxarifado', obs:'Separação, conferência de séries e transferência entre depósitos. Sempre em cópia nos e-mails de movimentação.', email:'douglas.fogaca@motomco.com.br', grupo:'Interno'},
+  douglas:    {nome:'Douglas Fogaça', papel:'Almoxarifado', obs:'Separação, conferência de séries e transferência entre depósitos. Sempre em cópia nos e-mails de movimentação.', tel:'4197762910', email:'douglas.fogaca@motomco.com.br', grupo:'Interno'},
   faturamento:{nome:'Faturamento', papel:'Emissão de NF', obs:'Recebe o pedido do Aster por e-mail e emite a NF.', email:'faturamento@motomco.com.br', grupo:'Interno'},
-  isabele:    {nome:'Isabele', papel:'Orçamentos (Hub)', obs:'Só ela cria orçamentos. Telefone e e-mail: pendente.', grupo:'Interno'},
+  isabele:    {nome:'Isabele', papel:'Orçamentos (Hub)', obs:'Só ela cria orçamentos.', tel:'41988141469', email:'gecilyn.brito@motomco.com.br', grupo:'Interno'},
   wilson:     {nome:'Wilson Cardoso', papel:'NIR · MTC Agroengenharia', obs:'Divergência entre NIR e DRY na Cocamar Maringá.', email:'wilson.cardoso@mtcagroengenharia.com', grupo:'Interno'}
 };
 const EQUIPE = ['wellingthon','rodrigo','jefferson','gabrielf','donlislei'];
@@ -624,6 +624,26 @@ const PROCS = [
     ['Anexar a NF','Depois de registrar, dá para anexar a NF da cotação. Se o chamado informado não existir, a cotação é salva mesmo assim, com aviso.'],
     ['Cotação importada da planilha CS.07','Não se edita no Hub: corrigir na planilha.']
    ]},
+  {id:'hubOrcamento', cat:'Hub (Atendimento)', tag:['Isabele','blue'], titulo:'Orçamento para o cliente (Isabele)',
+   resumo:'Menu Orçamento do Hub. Equipamentos de processo (DRY e NIR) e de bancada.', links:['hub'],
+   nota:'O Hub está em desenvolvimento. Este passo a passo foi conferido no código (branch troca-sem-preco), não na tela. Se a tela for diferente, anote e avise o Gabriel. Só quem tem a permissão Orçamentos vê esse menu (a Isabele). Quem cobre não gera orçamento: encaminhar o pedido a ela. O Hub não tem etapa de aprovação do orçamento; quem pede e quem aprova ainda não está definido (pendente).',
+   passos:[
+    ['Abrir o menu Orçamento','Se o menu não aparecer, falta a permissão Orçamentos para a pessoa: pedir ao administrador. Quem não tem a permissão de custo nunca vê custo, imposto nem margem real.'],
+    ['Escolher a categoria','Equipamentos de Processo (medição em linha, instalados na unidade) ou Equipamentos de Bancada (analisadores de amostra, em laboratório). O restante deste passo a passo é do Processo; o de Bancada está no último passo.'],
+    ['Escolher o equipamento','Processo: 999-DRY ou 999-NIR. O botão “Voltar” desfaz a escolha e “Novo orçamento” limpa o formulário.'],
+    ['Escolher o tipo de atendimento','Instalação, Manutenção, Visita Técnica, Acompanhamento ou Retirada de Equipamento. O nome do campo “Dias em instalação” muda conforme o tipo.'],
+    ['Identificar o cliente','Nome / Cliente: digitar e escolher a unidade cadastrada, que já preenche CNPJ/CPF e razão social. Os três campos são obrigatórios. CNPJ ou CPF precisa estar completo (14 ou 11 dígitos).'],
+    ['Chamado, número e pedido (opcionais)','Chamado do Hub (ex.: CH-2026-0012) preenche a unidade sozinho. Nº Orçamento é automático e sequencial: deixar em branco. Pedido Nº Aster, se já existir.'],
+    ['Mão de obra','Informar quantas pessoas de cada função: Analista Técnico, Técnico mecânico, Técnico eletromecânico, Auxiliar mecânico e Auxiliar elétrico. Precisa de pelo menos 1 pessoa, senão o Hub recusa.'],
+    ['Escopo','Equipamentos, unidades visitadas (vazio vale 1), dias de deslocamento, dias em instalação, materiais (R$) e margem de cobrança (%). A margem vem em 10% e é a única taxa que quem orça pode alterar.'],
+    ['Deslocamento','KM de ida e volta (número inteiro, ex.: 4.099), passageiros de avião, passagem (R$ por trecho) com Ida e/ou Volta marcados, e locação de veículo (diárias e valor da diária).'],
+    ['Valores que você não altera','Hotel, alimentação, custo por km, imposto e o valor de cada função vêm dos parâmetros do Hub. Esses campos só aparecem para quem tem a permissão de custo.'],
+    ['Observações e gerar','Observações opcionais (ex.: “Retirada de 999-DRY, unidade Lucas do Rio Verde”). Clicar em Gerar Orçamento. O Hub atribui o número e mostra o valor total, com impostos, e o resumo.'],
+    ['Entregar ao cliente','“Gerar PDF da Proposta” cria o PDF e “Copiar Resumo” copia o texto. Cada linha já sai com imposto e margem; o cliente não vê custo.'],
+    ['Reabrir um orçamento antigo','Na lista de orçamentos dá para baixar o PDF de novo. Quem orça só vê os próprios; administrador e quem tem a permissão de custo veem todos.'],
+    ['Errou um orçamento','Só o administrador exclui, com motivo (mínimo 5 caracteres). O número não é reaproveitado, então a proposta já enviada nunca repete número.'],
+    ['Bancada (diferente do Processo)','Pergunta como o técnico vai (carro próprio, alugado ou aéreo + carro alugado), o tipo de atendimento, o técnico e os dias de atendimento. A rota sai da base do técnico até a unidade; sem rota, informar o km manualmente com justificativa. O Hub sugere dias fora e pernoites: se mudar, a justificativa é obrigatória. Dá para lançar até 3 despesas extraordinárias. O ajuste comercial é só do administrador.']
+   ]},
   {id:'hubOutros', cat:'Hub (Atendimento)', tag:['Por cima','blue'], titulo:'Demais menus do Hub',
    resumo:'Status dos Equipamentos, Rastreio por N/S, Relatórios, Cooperativas e Orçamentos.', links:['hub'],
    nota:'O Hub está em desenvolvimento. Este passo a passo foi conferido no código (branch troca-sem-preco), não na tela. Se a tela for diferente, anote e avise o Gabriel.',
@@ -632,7 +652,7 @@ const PROCS = [
     ['Rastreio por N/S','Histórico completo do equipamento: clientes, entradas na fábrica e cada etapa, com data e responsável. É também onde se direciona um equipamento à assistência autorizada.'],
     ['Relatórios','Consulta dos relatórios de campo dos técnicos (Entrega, Troca, Instalação e outros), com PDF para o cliente.'],
     ['Cooperativas','Cada cooperativa (matriz) reúne as unidades dela. Mudar a matriz ou mover uma unidade só muda o vínculo; chamados, equipamentos, contratos e relatórios continuam presos à unidade.'],
-    ['Orçamentos','Só a Isabele usa. Quem cobre não cria orçamento: encaminhar o pedido a ela. O fluxo de orçamento ainda não está neste guia (pendente).']
+    ['Orçamento','Só a Isabele usa. Quem cobre não cria orçamento: encaminhar o pedido a ela. O passo a passo dela está em “Orçamento para o cliente (Isabele)”.']
    ]},
   {id:'hubErros', cat:'Hub (Atendimento)', tag:['Dúvidas','amber'], titulo:'Mensagens do Hub e o que fazer',
    resumo:'Os avisos que a tela dá quando falta ou sobra alguma coisa.', links:['hub'],
@@ -768,7 +788,7 @@ const WIZ = {
   r_hubChamado:{fim:true,tipo:'info',titulo:'Abrir chamado no Hub',proc:'hubChamados',link:'hub',passos:[]},
   r_hubEntregas:{fim:true,tipo:'info',titulo:'Cadastrar em Novas Entregas',proc:'hubEntregas',link:'hub',passos:[]},
   r_hubCotacao:{fim:true,tipo:'info',titulo:'Simular a cotação de frete',proc:'hubCotacao',link:'hub',passos:[]},
-  r_hubOrc:{fim:true,tipo:'info',titulo:'Orçamento é com a Isabele',contatos:['isabele'],
+  r_hubOrc:{fim:true,tipo:'info',titulo:'Orçamento é com a Isabele',contatos:['isabele'],proc:'hubOrcamento',
     passos:['Só a Isabele cria orçamentos. Quem cobre não cria.','Passar o pedido a ela e anotar unidade e contato do cliente para o Gabriel.']},
   r_integ:{fim:true,tipo:'info',titulo:'Usar a aba Integração',proc:'integracao',link:'planilha',passos:[]},
   r_saida:{fim:true,tipo:'info',titulo:'Enviar equipamento com técnico',proc:'saida',contatos:['douglas','faturamento'],passos:[]},
