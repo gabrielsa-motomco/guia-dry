@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cobertura DRY | Motomco</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d1310;
+  --glass:rgba(30,43,34,.62);--glass-strong:#172019;
+  --text:#eff5ed;--muted:#9dad9c;--line:rgba(203,238,196,.11);
+  --accent:#b7e044;--accent-ink:#152009;
+  --red:#ff8a85;--red-bg:rgba(255,130,126,.12);
+  --amber:#ffcb78;--amber-bg:rgba(255,202,117,.12);
+  --green:#7fdca6;--green-bg:rgba(117,217,160,.12);
+  --blue:#8cc7e9;--blue-bg:rgba(140,199,233,.12);
+  --shadow:0 24px 60px rgba(0,0,0,.28);
+  --r-lg:22px;--r-md:14px;--r-sm:10px;
+  color-scheme:dark;
+}
+body.light{
+  --bg:#eaf0e5;
+  --glass:rgba(255,255,255,.72);--glass-strong:#ffffff;
+  --text:#18271a;--muted:#55695a;--line:rgba(47,83,39,.14);
+  --accent:#4a740b;--accent-ink:#ffffff;
+  --red:#b02a25;--red-bg:rgba(176,42,37,.09);
+  --amber:#7f5100;--amber-bg:rgba(127,81,0,.1);
+  --green:#18663d;--green-bg:rgba(24,102,61,.1);
+  --blue:#1f5f84;--blue-bg:rgba(31,95,132,.1);
+  --shadow:0 18px 40px rgba(49,67,48,.12);
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html{height:100%}
+body{
+  margin:0;min-height:100%;font:15px/1.6 "Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  color:var(--text);background:var(--bg);
+  background-image:radial-gradient(1100px 600px at 85% -10%,rgba(183,224,68,.13),transparent 60%),radial-gradient(900px 600px at -10% 110%,rgba(117,217,160,.10),transparent 60%);
+  background-attachment:fixed;
+}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+.app{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
+.side{
+  position:sticky;top:0;height:100vh;padding:26px 18px;display:flex;flex-direction:column;gap:24px;
+  border-right:1px solid var(--line);background:var(--glass);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+}
+.brand b{display:block;font-size:19px;letter-spacing:.02em;font-weight:800}
+.brand b span{color:var(--accent)}
+.brand small{color:var(--muted);font-size:12.5px}
+.nav{display:flex;flex-direction:column;gap:4px}
+.nav button{display:flex;align-items:center;gap:11px;width:100%;padding:10px 12px;border:0;border-radius:var(--r-sm);background:transparent;cursor:pointer;text-align:left;color:var(--muted);font-weight:600;font-size:14px}
+.nav button:hover{background:var(--line);color:var(--text)}
+.nav button.on{background:var(--accent);color:var(--accent-ink)}
+.nav svg{width:18px;height:18px;flex:none}
+.side-foot{margin-top:auto;font-size:12px;color:var(--muted);display:flex;flex-direction:column;gap:10px}
+.main{padding:0 clamp(18px,4vw,52px) 90px;max-width:1180px;width:100%}
+.page{display:none;padding-top:26px}
+.page.on{display:block;animation:fade .25s ease}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* barra de busca global */
+.gbar{position:sticky;top:0;z-index:30;padding:calc(16px + env(safe-area-inset-top,0px)) 0 10px;background:linear-gradient(var(--bg) 78%,transparent)}
+.search{display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:var(--r-md);border:1px solid var(--line);background:var(--glass-strong);box-shadow:var(--shadow)}
+.search:focus-within{border-color:var(--accent)}
+.search svg{width:18px;height:18px;color:var(--muted);flex:none}
+.search input{flex:1;border:0;background:transparent;outline:none;font-size:16px;min-width:0}
+.gres{position:absolute;left:0;right:0;top:calc(100% - 4px);max-height:62vh;overflow:auto;border-radius:var(--r-md);border:1px solid var(--line);background:var(--glass-strong);box-shadow:var(--shadow);padding:6px}
+.gres[hidden]{display:none}
+.hit{display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left;border:0;background:transparent;padding:10px 12px;border-radius:var(--r-sm);cursor:pointer}
+.hit:hover,.hit:focus-visible{background:var(--line)}
+.hit .tag{flex:none;margin-top:2px;width:108px;text-align:center}
+.hit b{display:block;font-size:14.5px}
+.hit small{display:block;color:var(--muted);font-size:13px;line-height:1.4}
+
+.topbar{display:none}
+.tabbar{display:none}
+@media (max-width:860px){
+  .app{grid-template-columns:1fr}
+  .side{display:none}
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:calc(12px + env(safe-area-inset-top,0px)) 18px 0}
+  .topbar .brand b{font-size:16px}
+  .gbar{padding-top:12px}
+  .main{padding:0 16px 110px}
+  .tabbar{
+    display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;z-index:40;
+    padding:6px 4px calc(6px + env(safe-area-inset-bottom,0px));background:var(--glass-strong);border-top:1px solid var(--line);
+  }
+  .tabbar button{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;color:var(--muted);padding:6px 0;cursor:pointer;font-weight:600}
+  .tabbar button.on{color:var(--accent)}
+  .tabbar svg{width:21px;height:21px}
+}
+
+h1{font-size:clamp(26px,3.4vw,36px);line-height:1.15;margin:0 0 8px;font-weight:800;letter-spacing:-.02em}
+h2{font-size:20px;margin:0 0 14px;font-weight:700;letter-spacing:-.01em}
+h3{font-size:16px;margin:0 0 6px;font-weight:700}
+p{margin:0}
+.lead{color:var(--muted);max-width:68ch}
+.head{margin-bottom:24px}
+.ref{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);margin-bottom:10px}
+.ref i{width:8px;height:8px;border-radius:50%;background:var(--accent);display:inline-block}
+.glass{background:var(--glass);border:1px solid var(--line);border-radius:var(--r-lg);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);box-shadow:var(--shadow)}
+.pad{padding:22px}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.section{margin-top:30px}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+
+.btn{display:inline-flex;align-items:center;gap:8px;padding:9px 15px;border-radius:var(--r-sm);border:1px solid var(--line);background:var(--glass-strong);cursor:pointer;font-weight:600;font-size:14px;text-decoration:none;white-space:nowrap}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+.btn.sm{padding:6px 11px;font-size:13px}
+.btn svg{width:16px;height:16px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+
+.tag{display:inline-block;font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px}
+.t-red{background:var(--red-bg);color:var(--red)}
+.t-amber{background:var(--amber-bg);color:var(--amber)}
+.t-green{background:var(--green-bg);color:var(--green)}
+.t-blue{background:var(--blue-bg);color:var(--blue)}
+
+.note{display:flex;gap:12px;padding:14px 16px;border-radius:var(--r-md);font-size:14px;margin-top:14px}
+.note svg{width:18px;height:18px;flex:none;margin-top:2px}
+.note.warn{background:var(--amber-bg)}.note.warn svg{color:var(--amber)}
+.note.info{background:var(--blue-bg)}.note.info svg{color:var(--blue)}
+.note.bad{background:var(--red-bg)}.note.bad svg{color:var(--red)}
+
+#pend{display:none;margin-bottom:22px;border:1px dashed var(--amber);border-radius:var(--r-md);padding:14px 18px;background:var(--amber-bg)}
+#pend b{color:var(--amber)}
+#pend ul{margin:6px 0 0;padding-left:18px;font-size:14px}
+
+.alarm{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;padding:22px 24px;border-radius:var(--r-lg);background:linear-gradient(120deg,rgba(183,224,68,.18),rgba(117,217,160,.08));border:1px solid rgba(183,224,68,.35)}
+body.light .alarm{background:linear-gradient(120deg,rgba(95,143,18,.12),rgba(31,122,74,.06));border-color:rgba(95,143,18,.35)}
+.alarm h2{margin:0 0 4px}
+
+.unit{display:flex;flex-direction:column;gap:12px}
+.unit-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.eq{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--r-sm);background:var(--line);font-size:14px}
+.eq code{font-family:inherit;font-weight:700}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:7px}
+
+.check{display:flex;gap:13px;align-items:flex-start;padding:13px 14px;border-radius:var(--r-md);cursor:pointer}
+.check:hover{background:var(--line)}
+.check .box{width:22px;height:22px;border-radius:7px;border:2px solid var(--muted);flex:none;display:grid;place-items:center;margin-top:1px}
+.check .box svg{width:14px;height:14px;opacity:0}
+.check.done .box{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.check.done .box svg{opacity:1}
+.check.done b{text-decoration:line-through;color:var(--muted)}
+.check p{font-size:13.5px;color:var(--muted)}
+.bar{height:6px;border-radius:9px;background:var(--line);overflow:hidden;flex:1}
+.bar i{display:block;height:100%;background:var(--accent);transition:width .3s}
+
+.quick{display:flex;align-items:center;gap:13px;padding:16px;border-radius:var(--r-md);text-decoration:none;cursor:pointer;border:1px solid var(--line);background:var(--glass)}
+.quick:hover{border-color:var(--accent)}
+.quick .ic{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--line);color:var(--accent);flex:none}
+.quick .ic svg{width:20px;height:20px}
+.quick b{display:block;font-size:14.5px}
+.quick span{font-size:12.5px;color:var(--muted)}
+
+.wiz-trail{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:18px;font-size:13px}
+.wiz-trail button{border:0;background:var(--line);border-radius:999px;padding:5px 13px;cursor:pointer;color:var(--muted);font-weight:600}
+.wiz-trail button:hover{color:var(--text)}
+.wiz-trail [data-wizreset]{margin-left:auto}
+.wiz-path{margin:-8px 0 18px;font-size:13px;color:var(--muted);line-height:1.9}
+.wiz-path button{border:0;background:none;padding:0;cursor:pointer;color:var(--text);font-weight:600;text-decoration:underline dotted;text-underline-offset:3px}
+.wiz-path button:hover{color:var(--accent)}
+.wiz-path .sep{margin:0 6px}
+.result ol.escada{display:flex;gap:6px;list-style:none;margin:14px 0 0;padding:0;counter-reset:e}
+.result .escada li{margin:0;flex:1;counter-increment:e;padding:8px 10px;border-radius:var(--r-sm);background:var(--line);font-size:13px;font-weight:600;color:var(--muted);line-height:1.3}
+.escada li::before{content:counter(e) ". "}
+.escada li.feito{color:var(--text)}
+.escada li.agora{background:var(--accent);color:var(--accent-ink)}
+.wiz-q{font-size:clamp(20px,2.4vw,26px);font-weight:800;margin:0 0 6px;letter-spacing:-.01em}
+.opts{display:grid;gap:10px;margin-top:18px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.opt{text-align:left;padding:16px 18px;border-radius:var(--r-md);border:1px solid var(--line);background:var(--glass-strong);cursor:pointer;display:flex;flex-direction:column;gap:3px}
+.opt:hover{border-color:var(--accent)}
+.opt b{font-size:15px}
+.opt span{font-size:13px;color:var(--muted)}
+.result ol{margin:12px 0 0;padding-left:22px}
+.result li{margin-bottom:9px}
+.result li::marker{color:var(--accent);font-weight:800}
+
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:18px;align-items:center}
+.chip{border:1px solid var(--line);background:transparent;border-radius:999px;padding:5px 13px;font-size:13px;cursor:pointer;font-weight:600;color:var(--muted)}
+.chip:hover{color:var(--text)}
+.chip.on{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+.proc{border-radius:var(--r-md);border:1px solid var(--line);background:var(--glass);margin-bottom:10px;overflow:hidden}
+.proc.flash{border-color:var(--accent)}
+.proc summary{list-style:none;cursor:pointer;padding:16px 18px;display:flex;gap:12px;align-items:center;justify-content:space-between}
+.proc summary::-webkit-details-marker{display:none}
+.proc summary .chev{width:18px;height:18px;transition:transform .2s;color:var(--muted);flex:none}
+.proc[open] summary .chev{transform:rotate(90deg)}
+.proc summary small{display:block;color:var(--muted);font-size:13px;font-weight:500}
+.proc .body{padding:0 18px 20px}
+.steps{counter-reset:s;list-style:none;margin:0;padding:0}
+.steps li{counter-increment:s;position:relative;padding:0 0 14px 40px}
+.steps li::before{content:counter(s);position:absolute;left:0;top:0;width:26px;height:26px;border-radius:8px;background:var(--line);display:grid;place-items:center;font-size:13px;font-weight:800;color:var(--accent)}
+.steps li b{display:block}
+.steps li span{color:var(--muted);font-size:14px}
+.empty{text-align:center;padding:34px 10px;color:var(--muted)}
+.proc,.tplbox,.contact,#wizard{scroll-margin-top:96px}
+
+.flowtabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+.flow{display:flex;align-items:stretch;flex-wrap:wrap;margin:6px 0 18px}
+.dep{flex:1 1 170px;padding:16px;border-radius:var(--r-md);border:1px solid var(--line);background:var(--glass-strong);min-width:160px}
+.dep .n{font-size:24px;font-weight:800;color:var(--accent);line-height:1.1}
+.dep small{color:var(--muted);font-size:12.5px;display:block;margin-top:4px}
+.arrow{display:grid;place-items:center;padding:0 8px;color:var(--muted)}
+.arrow svg{width:22px;height:22px}
+.mapa{display:block;width:100%;max-width:560px;margin:0 auto 6px;overflow:visible}
+.mapa .ar{fill:none;stroke:var(--muted);stroke-width:2.5;opacity:.3}
+.mapa .ar.on{stroke:var(--accent);stroke-width:3;opacity:1;stroke-dasharray:9 6;animation:corre .9s linear infinite}
+@keyframes corre{to{stroke-dashoffset:-15}}
+.mapa .ponta{fill:var(--muted)}.mapa .ponta.on{fill:var(--accent)}
+.mapa .no rect{fill:var(--glass-strong);stroke:var(--line);stroke-width:1.5}
+.mapa .no text{fill:var(--muted);font-size:22px;font-weight:800;text-anchor:middle}
+.mapa .no.on rect{stroke:var(--accent);stroke-width:2.5}
+.mapa .no.on text{fill:var(--text)}
+.mapa .no:not(.on){opacity:.5}
+.mapa .badge circle{fill:var(--accent)}
+.mapa .badge text{fill:var(--accent-ink);font-size:13px;font-weight:800;text-anchor:middle}
+.mapa-passos{list-style:none;margin:8px 0 14px;padding:0;display:grid;gap:8px}
+.mapa-passos li{display:flex;gap:10px;align-items:baseline}
+.mapa-passos .num{flex:none;width:22px;height:22px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-size:12px;font-weight:800;display:grid;place-items:center}
+.legenda{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--muted);margin-bottom:14px}
+.legenda b{color:var(--text)}
+.legenda span:not(.on){opacity:.6}
+.live{display:block;width:100%;height:600px;border:0;border-radius:var(--r-md);background:#16191d}
+@media (max-width:860px){.live{height:65vh}}
+@media (max-width:640px){.flow{flex-direction:column}.arrow{padding:6px 0;transform:rotate(90deg)}}
+.rules{margin:0;padding-left:20px}
+.rules li{margin-bottom:6px}
+
+.tpl-list{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 12px}
+.tplbox:empty{display:none}
+.tplbox{border:1px solid var(--line);border-radius:var(--r-md);padding:18px;background:var(--glass-strong)}
+.form{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}
+.field label{display:block;font-size:12.5px;font-weight:700;color:var(--muted);margin-bottom:5px}
+.field input,.field select{width:100%;padding:10px 12px;border-radius:var(--r-sm);border:1px solid var(--line);background:var(--bg);outline:none;font-size:16px;font-weight:500;color:var(--text)}
+.field input.vazio{border-color:var(--amber)}
+.field input:focus,.field select:focus{border-color:var(--accent)}
+.preview{white-space:pre-wrap;padding:16px;border-radius:var(--r-md);border:1px solid var(--line);background:var(--bg);font-size:14px;line-height:1.75;margin-top:14px}
+.preview mark{background:var(--amber-bg);color:var(--amber);border-radius:4px;padding:0 3px}
+
+.contact{display:flex;flex-direction:column;gap:8px}
+.contact .role{font-size:12.5px;color:var(--muted);font-weight:600}
+.contact .val{font-weight:700;font-size:16px}
+.crow{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px 14px;border-radius:var(--r-md);border:1px solid var(--line);background:var(--glass-strong);margin-bottom:8px}
+.crow small{display:block;color:var(--muted);font-size:12.5px}
+.flash{animation:flash 1.4s ease}
+@keyframes flash{0%,60%{box-shadow:0 0 0 2px var(--accent)}100%{box-shadow:var(--shadow)}}
+
+#toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);opacity:0;background:var(--accent);color:var(--accent-ink);font-weight:700;padding:10px 18px;border-radius:14px;max-width:calc(100% - 32px);width:max-content;text-align:center;transition:.25s;z-index:60;pointer-events:none}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+@media (max-width:860px){#toast{bottom:calc(90px + env(safe-area-inset-bottom,0px))}}
+
+@media print{
+  .side,.topbar,.tabbar,.gbar,#toast,.btn,.live{display:none!important}
+  body{background:#fff;color:#000}
+  .page{display:block!important}
+  .glass{box-shadow:none;backdrop-filter:none}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand"><b>MOTOMCO <span>DRY</span></b></div>
+  <button class="btn sm" data-theme aria-label="Alternar tema"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-moon"/></svg></button>
+</div>
+
+<div class="app">
+  <aside class="side">
+    <div class="brand"><b>MOTOMCO <span>DRY</span></b><small>Cobertura de férias</small></div>
+    <nav class="nav" id="nav"></nav>
+    <div class="side-foot">
+      <span id="refSide"></span>
+      <button class="btn sm" data-theme><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-moon"/></svg> Alternar tema</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="gbar">
+      <label class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-search"/></svg>
+        <input id="gq" type="search" placeholder="Buscar no guia: Aster, manifesto, Wilson, retorno de NF" autocomplete="off" aria-label="Buscar no guia"></label>
+      <div id="gres" class="gres" hidden></div>
+    </div>
+
+    <div id="pend"></div>
+
+    <section class="page" id="p-hoje">
+      <div class="head">
+        <div class="ref"><i></i><span id="refHead"></span></div>
+        <h1>Cobertura do suporte 999-DRY</h1>
+        <p class="lead">Como acompanhar os equipamentos, falar com as unidades e cuidar de pedidos e NFs enquanto o Gabriel estiver fora. Abaixo estão a Cocamar ao vivo e a rotina do dia. Se algo parar, use o assistente. Para achar qualquer assunto, use a busca no topo.</p>
+      </div>
+
+      <div class="alarm">
+        <div>
+          <h2>Algo parou ou parece estranho?</h2>
+          <p class="muted">Responda 2 ou 3 perguntas e veja o que fazer, com quem falar e qual mensagem enviar.</p>
+        </div>
+        <button class="btn primary" data-go="assist"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-help"/></svg> Abrir assistente</button>
+      </div>
+
+      <div class="glass pad section" id="aoVivo"></div>
+
+      <div class="grid g2 section">
+        <div class="glass pad">
+          <div class="row" style="justify-content:space-between;margin-bottom:6px">
+            <h2 style="margin:0">Rotina do dia</h2>
+            <span class="small muted" id="dayLabel"></span>
+          </div>
+          <div class="row" style="margin-bottom:10px"><div class="bar"><i id="dayBar"></i></div><b class="small" id="dayCount"></b></div>
+          <div id="daily"></div>
+          <p class="small muted" style="margin-top:8px">As marcações zeram no dia seguinte.</p>
+        </div>
+        <div>
+          <h2>Unidades em operação</h2>
+          <div class="grid" id="units"></div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>Acessos rápidos</h2>
+        <div class="grid g3" id="quick"></div>
+      </div>
+    </section>
+
+    <section class="page" id="p-assist">
+      <div class="head">
+        <h1>O que fazer agora</h1>
+        <p class="lead">Escolha a situação. Cada resposta leva ao próximo passo até chegar em uma ação clara.</p>
+      </div>
+      <div class="glass pad" id="wizard"></div>
+    </section>
+
+    <section class="page" id="p-proc">
+      <div class="head">
+        <h1>Procedimentos</h1>
+        <p class="lead">Passo a passo de cada atividade, com as mensagens prontas dentro de cada um. Você pode escolher mais de uma área.</p>
+      </div>
+      <div class="chips" id="chips"></div>
+      <div id="procs"></div>
+    </section>
+
+    <section class="page" id="p-estoque">
+      <div class="head">
+        <h1>Estoque e NFs</h1>
+        <p class="lead">Como o pedido vira NF e manifesto, e como o equipamento se move entre os depósitos. Douglas (almoxarifado) sempre em cópia nos e-mails de movimentação.</p>
+      </div>
+      <div class="flowtabs" id="flowTabs"></div>
+      <div class="glass pad" id="flowView"></div>
+      <div class="glass pad section">
+        <h2>Regras que não mudam</h2>
+        <ul class="rules">
+          <li>Nenhum equipamento sai ou entra sem o número de série registrado.</li>
+          <li>Saiu = instalado + devolvido. Se não fechar, falar com o Douglas antes de qualquer NF.</li>
+          <li>Todo equipamento que volta passa pelo depósito 14 (teste da Produção) antes de voltar ao 13, mesmo sem uso.</li>
+          <li>Toda movimentação é lançada na planilha do almoxarifado no mesmo dia (Douglas).</li>
+        </ul>
+        <div class="row" style="margin-top:14px" id="flowLinks"></div>
+      </div>
+    </section>
+
+    <section class="page" id="p-contatos">
+      <div class="head">
+        <h1>Contatos</h1>
+        <p class="lead">Contato de outras unidades: aba Status da planilha (colunas Q a U: responsável, telefone e e-mails).</p>
+      </div>
+      <div id="contactGroups"></div>
+    </section>
+  </main>
+</div>
+
+<nav class="tabbar" id="tabbar"></nav>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.7v.5M12 17h.01"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/></symbol>
+  <symbol id="i-box" viewBox="0 0 24 24"><path d="M21 8l-9-5-9 5 9 5 9-5zM3 8v8l9 5 9-5V8M12 13v8"/></symbol>
+  <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3l10 18H2L12 3zM12 10v4M12 17h.01"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7h.01"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></symbol>
+  <symbol id="i-ext" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></symbol>
+  <symbol id="i-radar" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><path d="M12 12l6-6"/></symbol>
+  <symbol id="i-table" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 4v16"/></symbol>
+  <symbol id="i-cpu" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M21 13A9 9 0 1 1 11 3a7 7 0 0 0 10 10z"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+</svg>
+
+<script>
+'use strict';
+/* =====================================================================
+   CONFIGURAÇÃO: o que muda de tempos em tempos fica aqui.
+   Link vazio ('') fica oculto ou aparece como pendência no topo.
+   ===================================================================== */
+const CONFIG = {
+  dataReferencia: '27/10/2026',   // atualizar no dia em que sair de férias
+  coberturaAte:   '',             // ex.: '24/11/2026'
+  links: {
+    sgu:               'https://sgu.motomco.com.br/',
+    telemetriaCocamar: 'https://sgu.motomco.com.br/telemetria/6a50d9fa333e5e7ef99c2104',
+    painelApi:         'https://api.motomco.com.br/supportdry',
+    planilha:          'https://docs.google.com/spreadsheets/d/1Z2pnhFNQgkj8zDXp7V6Fb302_EARhkysphG2zp4Lcn8/edit?usp=sharing',
+    fluxoEstoque:      '',          // opcional: link do PDF no Drive. Vazio = botão some.
+    hub:               'https://script.google.com/a/macros/motomco.com.br/s/AKfycbyCx43LDzc9-RC6mzdokVV0MiVLcCVxeTwTPAiOjRDsdpfKWw3lGaxvyeK1u-S_KMqI/exec',   // Motomco Hub (exige login @motomco.com.br)
+    orcamento:         ''           // reservado: sistema de orçamento (Apps Script, login @motomco.com.br). Vazio = botão some.
+  }
+};
+
+/* ===================== UNIDADES ===================== */
+const UNITS = [
+  { nome:'Cocamar · Maringá/PR', nivel:'Crítica', cor:'red',
+    texto:'Única unidade crítica. Conferir várias vezes ao dia. O NIR está instalado junto dos DRYs.',
+    equip:[
+      {serie:'SEMT-00119', local:'Fábrica', status:'Operando'},
+      {serie:'SEMT-00118', local:'Expedição LM', status:'Operando'},
+      {serie:'SEMT-00172', local:'GSI Entrada do Secador', status:'Linha parada'},
+      {serie:'SEMT-00131', local:'GSI Saída do Secador', status:'Linha parada'}
+    ], link:'telemetriaCocamar', linkLabel:'Abrir telemetria' },
+  { nome:'Demais unidades', nivel:'1 vez ao dia', cor:'amber',
+    texto:'Armazém Cortezia (Lucas do Rio Verde/MT) e as que entrarem em operação. Conferir no SGU se as medições estão atualizando. Contato da unidade na aba Status da planilha.',
+    equip:[], link:'sgu', linkLabel:'Abrir SGU' }
+];
+
+/* ===================== CONTATOS ===================== */
+const GROUP_ORDER = ['Cocamar Maringá','Equipe de instalação','Escalonamento','Interno'];
+const GROUP_NOTE = {
+  'Equipe de instalação':'Primeiro apoio quando um DRY travar ou der erro no painel API.',
+  'Escalonamento':'Só em último caso, quando a equipe de instalação não resolver.'
+};
+const CONTACTS = {
+  silvanei:   {nome:'Silvanei', papel:'Elétrica · Cocamar Maringá', obs:'Condições elétricas e operacionais da linha.', tel:'4498696296', grupo:'Cocamar Maringá'},
+  antonio:    {nome:'Antônio José', papel:'Operação · Cocamar Maringá', obs:'Confirma se a linha está rodando.', tel:'4497535730', grupo:'Cocamar Maringá'},
+  dalton:     {nome:'Dalton', papel:'Graneleiro · Cocamar Maringá', obs:'Responsável geral. Se não souber com quem falar, ele direciona.', tel:'4491148549', grupo:'Cocamar Maringá'},
+  wellingthon:{nome:'Wellingthon', papel:'Equipe de instalação', tel:'4184080440', grupo:'Equipe de instalação'},
+  rodrigo:    {nome:'Rodrigo', papel:'Equipe de instalação', tel:'4199104754', grupo:'Equipe de instalação'},
+  jefferson:  {nome:'Jefferson Silveira', papel:'Equipe de instalação', tel:'4196218759', grupo:'Equipe de instalação'},
+  gabrielf:   {nome:'Gabriel Fernando', papel:'Equipe de instalação', tel:'4988062630', grupo:'Equipe de instalação'},
+  donlislei:  {nome:'Donlislei', papel:'Equipe de instalação', tel:'4199300097', grupo:'Equipe de instalação'},
+  vilmar:     {nome:'Vilmar', papel:'Escalonamento técnico', tel:'4184984246', grupo:'Escalonamento'},
+  douglas:    {nome:'Douglas Fogaça', papel:'Almoxarifado', obs:'Separação, conferência de séries e transferência entre depósitos. Sempre em cópia nos e-mails de movimentação.', email:'douglas.fogaca@motomco.com.br', grupo:'Interno'},
+  faturamento:{nome:'Faturamento', papel:'Emissão de NF', obs:'Recebe o pedido do Aster por e-mail e emite a NF.', email:'faturamento@motomco.com.br', grupo:'Interno'},
+  isabele:    {nome:'Isabele', papel:'Orçamentos (Hub)', obs:'Só ela cria orçamentos. Telefone e e-mail: pendente.', grupo:'Interno'},
+  wilson:     {nome:'Wilson Cardoso', papel:'NIR · MTC Agroengenharia', obs:'Divergência entre NIR e DRY na Cocamar Maringá.', email:'wilson.cardoso@mtcagroengenharia.com', grupo:'Interno'}
+};
+const EQUIPE = ['wellingthon','rodrigo','jefferson','gabrielf','donlislei'];
+
+/* ===================== ROTINA DO DIA ===================== */
+const DAILY = [
+  {t:'Cocamar: Fábrica e Expedição LM medindo?', d:'No quadro “ao vivo” acima, ver a ÚLTIMA MEDIDA dos dois. Repetir ao longo do dia.'},
+  {t:'Demais unidades: medições atualizando?', d:'Uma conferência no SGU, no começo do dia, já basta.'},
+  {t:'Painel API sem travamento ou erro novo', d:'Olhar só mensagens recentes. Erro antigo no histórico não é problema atual.'},
+  {t:'Parada acima de 2 h na Cocamar tratada', d:'Confirmar com a unidade se a linha está parada (use o assistente).'},
+  {t:'Aba NFs sem nota vencida', d:'Coluna “Dias para vencer”: vermelho significa vencida.'},
+  {t:'Pendências anotadas', d:'Unidade, série, horário, o que foi feito e o próximo passo. Anote também cada pedido e NF emitidos para o Gabriel lançar na volta.'}
+];
+
+/* ===================== PROCEDIMENTOS ===================== */
+const PROCS = [
+  {id:'cocamar', cat:'Monitoramento', tag:['Crítico','red'], titulo:'Monitorar a Cocamar Maringá',
+   resumo:'4 DRYs instalados, 2 operando. NIR junto.', links:['telemetriaCocamar'],
+   passos:[
+    ['Abrir a telemetria da Cocamar','Botão abaixo ou em Acessos rápidos.'],
+    ['Conferir Fábrica (SEMT-00119) e Expedição LM (SEMT-00118)','Ver horário da última leitura e se o gráfico está contínuo. SEMT-00172 e SEMT-00131 (secador) estão com a linha parada, então sem leitura neles é normal. A data vem como mês/dia/ano: 10/02/26, 08:04 PM é 2 de outubro às 20h04.'],
+    ['Parado há menos de 2 h','Só acompanhar. Parada curta é comum (troca de produto, limpeza, falta de grão).'],
+    ['Parado há mais de 2 h','Ligar ou mandar mensagem para Antônio José ou Silvanei. Se não souberem, Dalton direciona.'],
+    ['Linha rodando e DRY sem medir','Olhar o painel API e acionar a equipe de instalação.'],
+    ['Leitura do DRY diferente do NIR','Anotar horário e valores dos dois e falar com o Wilson. Não concluir que o DRY está errado antes disso.']
+   ]},
+  {id:'demais', cat:'Monitoramento', tag:['Rotina','amber'], titulo:'Demais unidades (Cortezia e outras)',
+   resumo:'Conferência leve, 1 vez ao dia.', links:['sgu'],
+   passos:[
+    ['Abrir o SGU e localizar a unidade','Pesquisa, lista lateral ou filtro por unidade.'],
+    ['Ver o horário da última medição','Se está atualizando, não precisa fazer mais nada.'],
+    ['Sem leitura recente','Pegar o contato da unidade na aba Status (colunas Q a U) e confirmar se a linha está rodando.'],
+    ['Linha rodando e DRY sem medir','Seguir o mesmo caminho da Cocamar: painel API e equipe de instalação.']
+   ]},
+  {id:'sgu', cat:'Monitoramento', tag:['Essencial','green'], titulo:'Ler um equipamento no SGU',
+   resumo:'O que olhar e o que não significa nada.', links:['sgu'],
+   passos:[
+    ['Entrar no SGU e localizar a unidade','Pesquisa, lista lateral ou filtros.'],
+    ['Confirmar série e posição','Antes de qualquer conclusão, conferir se é o equipamento certo.'],
+    ['Ver o horário da última medição','É o dado mais importante. Umidade e temperatura vêm depois.'],
+    ['Olhar a sequência, não um ponto','Uma leitura isolada fora do padrão não é falha. Troca de produto, de lote ou temperatura do grão alteram a leitura.'],
+    ['“Online” não quer dizer medindo','O equipamento pode estar conectado sem grão passando. O que vale é a última medição.']
+   ]},
+  {id:'api', cat:'Monitoramento', tag:['Essencial','green'], titulo:'Verificar o painel Suporte DRY / API',
+   resumo:'Reconhecer travamento e encaminhar.', links:['painelApi'],
+   passos:[
+    ['Abrir o painel e localizar o serial','A lista mostra serial, status, hora, empresa, local e software.'],
+    ['Ler a mensagem e o horário','Mensagens de inicialização e medição são normais. O que importa é erro recente que se repete.'],
+    ['Cruzar com o SGU','Se o SGU continua recebendo medição, não há parada real.'],
+    ['Travado ou erro repetido','Acionar a equipe de instalação com serial, unidade, mensagem, horário e o que já foi verificado (mensagem pronta abaixo).'],
+    ['Não resolveu','Escalar ao Vilmar.'],
+    ['Não executar comando remoto','Reinício ou comando só com orientação da equipe técnica.']
+   ]},
+  {id:'status', cat:'Planilha', tag:['Consulta','blue'], titulo:'Achar informações na aba Status',
+   resumo:'Contato, endereço, NF atual e dados técnicos de qualquer unidade.', links:['planilha'],
+   nota:'A planilha é só para visualização: não dá para editar. Se algo estiver desatualizado, anote para o Gabriel corrigir na volta.',
+   passos:[
+    ['Abrir a planilha Controle 999-DRY, aba Status','Ctrl+F pela unidade, cliente ou série (ex.: SEMT-00119).'],
+    ['A a E: identificação','Serial, SN, cliente, cidade e CNPJ.'],
+    ['F a I: situação','NF atual, NF, status atual e observações.'],
+    ['J a N: técnico','Posição, helicoides, conexão e operadora do chip.'],
+    ['O e P: instalação','Data de instalação e endereço.'],
+    ['Q a U: contato','Responsável, telefone, e-mails, e-mail para NF e acesso ao SGU.']
+   ]},
+  {id:'integracao', cat:'Planilha', tag:['Sob demanda','blue'], titulo:'Integração e envio de documentos ao cliente',
+   resumo:'Quando uma unidade pede cadastro em plataforma ou documentação.', links:['planilha'],
+   passos:[
+    ['Entender o pedido','Qual unidade, qual plataforma e quais documentos.'],
+    ['Abrir a aba Integração','Tem plataforma, link, contato e observações de cada cliente.'],
+    ['Documentos dos técnicos','Validade de NRs e documentos na aba NRs.'],
+    ['Enviar só documento válido','Conferir a validade antes de anexar. Documento vencido gera retrabalho com a unidade.'],
+    ['Não repassar login e senha','Os acessos ficam na planilha. Não enviar por e-mail nem WhatsApp.']
+   ]},
+  {id:'saida', cat:'Estoque e NF', tag:['Essencial','green'], titulo:'Enviar equipamento com técnico',
+   resumo:'Separação, pedido no Aster, NF pelo faturamento e manifesto no EGS.',
+   passos:[
+    ['Receber a demanda','Técnico (ou Douglas) informa técnico, destino, motivo, itens e quantidades.'],
+    ['Pedir a separação ao Douglas','Ele separa e transfere do depósito 13 para o 06B (agente de campo). Mensagem pronta abaixo.'],
+    ['Pegar as séries com o Douglas','Só seguir com as séries confirmadas por ele.'],
+    ['Abrir o pedido de compra no Aster','Em nome do técnico que vai transportar. O Aster gera o número do pedido.'],
+    ['Enviar o pedido ao faturamento por e-mail','O faturamento emite a NF. Douglas em cópia. Mensagem pronta abaixo.'],
+    ['Com a NF emitida, gerar o manifesto no EGS','O manifesto é feito em cima dessa NF, também em nome do técnico.'],
+    ['Enviar NF e manifesto ao técnico','Por e-mail, Douglas em cópia.'],
+    ['Anotar o que foi emitido','Pedido, NF, técnico, destino e séries, para o Gabriel lançar na planilha na volta.']
+   ]},
+  {id:'retorno', cat:'Estoque e NF', tag:['Essencial','green'], titulo:'Depois da manutenção',
+   resumo:'Retorno da NF do técnico e NF nova se algo ficou na unidade.',
+   passos:[
+    ['Confirmar com o técnico o que voltou e o que ficou','Lista de séries nos dois casos.'],
+    ['Pedir o retorno da NF do técnico','Para o que voltou. Mensagem pronta abaixo.'],
+    ['Ficou equipamento na unidade?','Pedir ao Douglas a transferência para o depósito 06 e só depois abrir o pedido no Aster para a unidade.'],
+    ['Enviar o pedido ao faturamento','O faturamento emite a NF da unidade. Douglas em cópia.'],
+    ['Enviar a NF à unidade por e-mail','Usar o e-mail de NF da aba Status. Douglas em cópia.'],
+    ['Pedir o retorno do equipamento que saiu da unidade','O que foi trocado precisa da NF de retorno.'],
+    ['Equipamento que voltou vai para o depósito 14','Produção testa. Aprovado volta ao 13. Reprovado vai para manutenção ou sucata.']
+   ]},
+  {id:'nfs', cat:'Estoque e NF', tag:['Consulta','amber'], titulo:'Consultar as NFs de demonstração',
+   resumo:'Aba NFs: prazo, destinatários e séries.', links:['planilha'],
+   nota:'Algumas NFs, nos casos sem contrato, têm validade de 60 dias. O Gabriel deixa todas válidas antes de sair.',
+   passos:[
+    ['Abrir a aba NFs','Colunas: cooperativa, unidade, NF, emissão, vencimento, dias para vencer, e-mails e séries.'],
+    ['Ler “Dias para vencer”','Verde está dentro do prazo. Vermelho está vencida.'],
+    ['Nota vencida ou perto de vencer','Pedir o retorno da NF (mensagem pronta abaixo) e avisar o Gabriel.'],
+    ['Conferir destinatários antes de enviar','Os e-mails da linha são de quem recebe a comunicação. Em movimentação de equipamento, Douglas em cópia.']
+   ]},
+  {id:'outras', cat:'Planilha', tag:['Consulta','blue'], titulo:'Outras abas da planilha',
+   resumo:'Só para consulta. Não precisa atualizar.', links:['planilha'],
+   passos:[
+    ['Agenda de Viagens','Quem está onde e fazendo o quê.'],
+    ['Contratos e Controle NF Contratos','Vínculo entre contrato e unidade.'],
+    ['Chamados','Histórico de problemas e solução. Útil quando um problema se repete.'],
+    ['Equipe Técnica, Relatórios e NRs','Dados dos técnicos e documentos.']
+   ]},
+  /* ---- Motomco Hub (atendimento). Fonte: código do Hub, branch troca-sem-preco. Não testado no Google. ---- */
+  {id:'hubContato', cat:'Hub (Atendimento)', tag:['Mais usado','green'], titulo:'Registrar contato e abrir chamado',
+   resumo:'Atendimento › Registrar Contato. Todo contato é registrado; chamado só quando precisa de técnico.', links:['hub'],
+   nota:'O Hub está em desenvolvimento. Este passo a passo foi conferido no código (branch troca-sem-preco), não na tela. Se a tela for diferente, anote e avise o Gabriel.',
+   passos:[
+    ['Abrir Atendimento › Registrar Contato','O grupo “Atendimento” do menu abre e fecha ao clicar no título. Se um menu não aparece, falta permissão para a pessoa: pedir ao administrador.'],
+    ['Preencher os campos com asterisco','Quem entrou em contato (Cliente, Motomco, Equipe técnica ou Outros), Unidade (digitar nome ou CNPJ), Motivo e Protocolo Digisac (mínimo 4 caracteres). Resolvido remotamente? Sim ou Não.'],
+    ['Campos opcionais','Nome do contato, data (vazio = agora), equipamentos (marcar na lista ou digitar N/S), telefone, e-mail e o que foi relatado.'],
+    ['Resolveu na hora','Marcar “Sim — resolvido agora” e escrever a solução (obrigatória). A hora do registro vira a hora da solução. Clicar em “Registrar contato”.'],
+    ['Não resolveu','Marcar “Não — ficou pendente” e registrar. Depois, na lista “Contatos registrados”, dá para resolver o pendente informando a solução.'],
+    ['Precisa de técnico, troca ou visita','Clicar em “Registrar e abrir chamado(s)”, ou depois usar “Abrir chamado” na linha do contato. O contato fica ligado ao chamado e passa para “Chamado aberto”. Contato simples não vira chamado.'],
+    ['Registrou errado','Quem cobre não exclui. Só o administrador exclui contato, com motivo. Anotar para o Gabriel. Contato que veio da planilha de controle não se edita no Hub.']
+   ]},
+  {id:'hubChamados', cat:'Hub (Atendimento)', tag:['Mais usado','green'], titulo:'Abrir e acompanhar chamados',
+   resumo:'Atendimento › Chamados. Prazo (SLA), técnico e status.', links:['hub'],
+   nota:'O Hub está em desenvolvimento. Este passo a passo foi conferido no código (branch troca-sem-preco), não na tela. Se a tela for diferente, anote e avise o Gabriel.',
+   passos:[
+    ['Acompanhar','A lista mostra os mais recentes primeiro, com prazo, técnico e status. Status: Aberto, Atribuído, Em deslocamento, Em execução, Aguardando peça, Aguardando cliente, Concluído e Cancelado.'],
+    ['Abrir chamado: escolher a linha e o modelo','Processo (999-DRY ou 999-NIR), Bancada ou Acessórios (Cotton, Calador). Depois o tipo de atendimento. O modelo é obrigatório em todos os tipos.'],
+    ['Campos de todo chamado','Unidade, prioridade, telefone do contato e locação. Prioridade define o prazo: Nível 4 é o mais urgente (1 dia útil), Nível 3 = 3, Nível 2 = 5 e Nível 1 = 10 dias úteis (seg a sex, sem feriados).'],
+    ['Bancada e Acessórios','Também pedem N/S, erro relatado, descrição, NF de origem, valor e protocolo do Digisac. Em Entrega e Retirada, NF e valor são opcionais; na Entrega, o N/S também. ESI pede a revisão.'],
+    ['Instalação e Acompanhamento (processo)','Pedem os pontos previstos (número inteiro de 1 a 999). N/S previsto é opcional e não pedem erro relatado.'],
+    ['Visita técnica','Pede a quantidade de equipamentos (1 a 999), sem N/S nem erro.'],
+    ['Troca','A chave da NF de entrega (44 dígitos) pode ser informada na abertura; a de retorno também. As duas são opcionais.'],
+    ['Avisos do sistema','Se o N/S tiver algum problema, o Hub avisa e pede confirmação antes de abrir. Com técnico escolhido, o chamado nasce “Atribuído”; sem técnico, “Aberto”.'],
+    ['E-mail ao cliente','A caixa “Enviar e-mail de abertura ao cliente” vem marcada. O e-mail sai para o contato e para os e-mails adicionais da unidade; sem nenhum dos dois, não há para quem enviar.'],
+    ['Concluir ou cancelar','Quem abriu, o gestor do atendimento e o administrador. Na Troca (e em chamado com relatório de Troca finalizado), concluir pede a confirmação dos 2 N/S: é aí que o estoque se move.']
+   ]},
+  {id:'hubEntregas', cat:'Hub (Atendimento)', tag:['Mais usado','green'], titulo:'Novas Entregas (contratos novos)',
+   resumo:'Cadastro dos contratos que entram, uma linha por equipamento.', links:['hub'],
+   nota:'O Hub está em desenvolvimento. Este passo a passo foi conferido no código (branch troca-sem-preco), não na tela. Se a tela for diferente, anote e avise o Gabriel. FASE DE TESTE: este cadastro grava só no Hub. Não escreve na planilha FORM.GC.01 nem cria ou altera unidade, empresa, contrato ou equipamento.',
+   passos:[
+    ['Abrir Atendimento › Novas Entregas','Cadastro do contrato (cabeçalho) e dos equipamentos do pedido.'],
+    ['Cabeçalho do contrato','Contrato (padrão CLMU 000000.00; fora do padrão só avisa), modelo do contrato (Padrão, Kit produtor ou FOB), empresa, CNPJ ou CPF (aceita o código do Aster, “C” + 14 dígitos), unidade, UF, key account, SGU e taxa de implementação.'],
+    ['Equipamentos','Uma linha por equipamento: modelo, revisão e quantidade.'],
+    ['Status','Assinado, Entregue, Aguardando, Em rota, Em assinatura ou Cancelado. Ao criar, não dá para começar como Entregue.'],
+    ['Marcar como Entregue','Exige data da entrega, N/S e locação (técnico ou FOB). Sem nota fiscal, só avisa.'],
+    ['N/S','O prefixo precisa combinar com o modelo (ex.: SIMT-14135). N/S que já está em outra entrega ativa é recusado.'],
+    ['Corrigir ou excluir','Editar a linha é com o atendimento. Excluir linhas e editar a lista de key accounts é só do administrador.']
+   ]},
+  {id:'hubCotacao', cat:'Hub (Atendimento)', tag:['Mais usado','green'], titulo:'Cotação de frete',
+   resumo:'Simula volumes e peso para cotar nas transportadoras. Registrar é opcional.', links:['hub'],
+   nota:'O Hub está em desenvolvimento. Este passo a passo foi conferido no código (branch troca-sem-preco), não na tela. Se a tela for diferente, anote e avise o Gabriel. A lista de caixas e de transportadoras é editada pelo administrador; conferir na tela. Caixa do DRY é medida provisória; Cotton e NIR ainda sem medidas (o simulador avisa).',
+   passos:[
+    ['Abrir Atendimento › Cotação de frete','Montar o que vai na caixa e copiar volumes, peso e medidas para cotar no site ou telefone da transportadora.'],
+    ['Escolher as caixas e as quantidades','Tipos: ESI, Retrofit, DRY, FBI, EE, Castanha, Connect (maleta e caixa), CP, Copo, Cotton e NIR. Volumes = quantidade; peso = quantidade × peso da caixa. Não calcula cubagem.'],
+    ['Escolher a transportadora','Cadastradas hoje: São Miguel (RS, PR, SC), Rodonaves (PR, SP, MG, GO), Carvalima (AC, RO, MT, MS, PA), Azul (PA, MA, CE, BA), DHL e Daytona (SP, PR, SC).'],
+    ['Registrar a cotação (opcional)','Só o destinatário é obrigatório. Dá para informar chamado, unidade, UF, valor do frete, prazo (dias inteiros), nº da cotação e nº da coleta.'],
+    ['Anexar a NF','Depois de registrar, dá para anexar a NF da cotação. Se o chamado informado não existir, a cotação é salva mesmo assim, com aviso.'],
+    ['Cotação importada da planilha CS.07','Não se edita no Hub: corrigir na planilha.']
+   ]},
+  {id:'hubOutros', cat:'Hub (Atendimento)', tag:['Por cima','blue'], titulo:'Demais menus do Hub',
+   resumo:'Status dos Equipamentos, Rastreio por N/S, Relatórios, Cooperativas e Orçamentos.', links:['hub'],
+   nota:'O Hub está em desenvolvimento. Este passo a passo foi conferido no código (branch troca-sem-preco), não na tela. Se a tela for diferente, anote e avise o Gabriel.',
+   passos:[
+    ['Status dos Equipamentos','Quantos equipamentos estão em cada etapa, com filtro por cooperativa. Clicar numa etapa lista N/S, modelo, local, desde quando, dias úteis parado e chamado.'],
+    ['Rastreio por N/S','Histórico completo do equipamento: clientes, entradas na fábrica e cada etapa, com data e responsável. É também onde se direciona um equipamento à assistência autorizada.'],
+    ['Relatórios','Consulta dos relatórios de campo dos técnicos (Entrega, Troca, Instalação e outros), com PDF para o cliente.'],
+    ['Cooperativas','Cada cooperativa (matriz) reúne as unidades dela. Mudar a matriz ou mover uma unidade só muda o vínculo; chamados, equipamentos, contratos e relatórios continuam presos à unidade.'],
+    ['Orçamentos','Só a Isabele usa. Quem cobre não cria orçamento: encaminhar o pedido a ela. O fluxo de orçamento ainda não está neste guia (pendente).']
+   ]},
+  {id:'hubErros', cat:'Hub (Atendimento)', tag:['Dúvidas','amber'], titulo:'Mensagens do Hub e o que fazer',
+   resumo:'Os avisos que a tela dá quando falta ou sobra alguma coisa.', links:['hub'],
+   passos:[
+    ['“Informe o protocolo do Digisac (mínimo 4 caracteres)”','Abrir o atendimento no Digisac e copiar o protocolo. É obrigatório no contato e nos chamados de bancada.'],
+    ['“Modelo não pertence à categoria” ou “Tipo de atendimento não pertence à categoria”','A linha de equipamentos escolhida não combina com o modelo ou o tipo. Voltar e escolher a linha certa (Processo é só 999-DRY e 999-NIR).'],
+    ['“Preencher: …”','O texto lista o que falta. Os campos com asterisco são obrigatórios.'],
+    ['“N/S fora do padrão (ex.: SIMT-14135)”','Conferir o N/S na etiqueta do equipamento. O Hub aceita maiúscula ou minúscula e ignora espaços.'],
+    ['“O N/S … é de …, mas a linha é do modelo …” (Novas Entregas)','O prefixo do N/S não combina com o modelo da linha. Conferir qual dos dois está errado.'],
+    ['“O N/S … já está em outra entrega ativa”','Esse N/S já foi cadastrado numa entrega que não está cancelada. Localizar a outra linha antes de criar.'],
+    ['“Para marcar como Entregue informe: …”','Preencher data da entrega, N/S e locação (técnico ou FOB).'],
+    ['“Chave da NF inválida: informe os 44 dígitos”','Colar só a chave de acesso da NF (espaços, pontos e traços são ignorados).'],
+    ['“Somente o administrador exclui …”','Quem cobre não exclui contato, entrega nem altera parâmetros. Anotar para o Gabriel.']
+   ]}
+  // Reservado: procedimento de orçamento (cat:'Orçamento'). Entra quando o fluxo estiver definido.
+];
+
+/* ===================== FLUXOS (aba Estoque e NFs) ===================== */
+const FLOWS = [
+  {id:'pedido', nome:'Pedido, NF e manifesto',
+   deps:[['Aster','Abre o pedido de compra'],['Faturamento','Recebe o pedido por e-mail e emite a NF'],['EGS','Gera o manifesto com essa NF']],
+   texto:'Sempre nessa ordem. Sem NF emitida não há manifesto. Em remessa com técnico, pedido, NF e manifesto saem em nome do técnico que vai transportar.'},
+  {id:'tecnico', nome:'Depósitos: saída com técnico',
+   mapa:[['13','06B',1,'Douglas separa e transfere para o técnico'],['06B','06',2,'Depois da instalação, o que foi instalado']],
+   texto:'Douglas separa e transfere 13 → 06B. Depois da instalação, transfere o que foi instalado de 06B → 06.'},
+  {id:'unidade', nome:'Depósitos: NF direto para a unidade',
+   mapa:[['13','06',1,'Equipamento do estoque'],['06B','06',1,'Ou equipamento que estava com o técnico']],
+   texto:'Quando o equipamento fica na unidade (ex.: troca na manutenção), peça ao Douglas a transferência para o 06 antes do pedido no Aster. A NF vai para o e-mail de NF da aba Status.'},
+  {id:'retorno', nome:'Depósitos: retorno',
+   mapa:[['06B','14',1,'Do técnico para o teste da Produção'],['06','14',1,'Ou da unidade para o teste da Produção'],['14','13',2,'Aprovado: volta ao estoque']],
+   texto:'Tudo que volta passa pelo 14, mesmo sem uso. Reprovado vai para manutenção ou sucata. Pedir também a NF de retorno correspondente.'}
+];
+const DEPOSITOS = {'13':'Estoque disponível','06B':'Com o técnico (agente de campo)','06':'Instalado no cliente','14':'Teste da Produção'};
+
+/* ===================== MENSAGENS PRONTAS ===================== */
+const TEMPLATES = [
+  {id:'operador', nome:'Confirmar parada com a unidade', canal:'WhatsApp', procs:['cocamar','demais'],
+   campos:[['unidade','Unidade / posição','Cocamar · Fábrica'],['horario','Sem medir desde','14h30']],
+   corpo:'Bom dia! Tudo bem?\n\nEstou acompanhando o DRY da {unidade} e ele está sem atualizar as medições desde {horario}.\n\nA linha está rodando normalmente ou teve alguma parada?\n\nSe estiver rodando, consegue ver se aparece alguma mensagem no painel do equipamento?\n\nObrigado!'},
+  {id:'equipe', nome:'Acionar a equipe de instalação', canal:'WhatsApp', procs:['api','cocamar'],
+   campos:[['serial','Serial','SEMT-00119'],['unidade','Unidade','Cocamar Maringá · Fábrica'],['mensagem','Mensagem no painel API',''],['horario','Desde','14h30'],['obs','O que já foi verificado','Unidade confirmou que a linha está rodando']],
+   corpo:'Pessoal, preciso de apoio com um DRY.\n\nSerial: {serial}\nUnidade: {unidade}\nMensagem no painel: {mensagem}\nDesde: {horario}\nJá verificado: {obs}\n\nConseguem dar uma olhada?'},
+  {id:'wilson', nome:'Divergência NIR × DRY', canal:'E-mail', procs:['cocamar'], para:'wilson',
+   assunto:'Divergência NIR × DRY · {unidade}',
+   campos:[['unidade','Unidade / posição','Cocamar Maringá · Fábrica'],['produto','Produto','Soja'],['horario','Horário','27/10 às 10h'],['dry','Umidade DRY (%)',''],['nir','Umidade NIR (%)','']],
+   corpo:'Olá, Wilson, tudo bem?\n\nIdentificamos uma diferença entre o NIR e o DRY na {unidade}.\n\nProduto: {produto}\nHorário: {horario}\nDRY: {dry}%\nNIR: {nir}%\n\nConsegue verificar do lado do NIR se houve alguma condição diferente nesse período?\n\nObrigado!'},
+  {id:'douglas', nome:'Pedir separação ao Douglas', canal:'E-mail', procs:['saida','retorno'], para:'douglas',
+   assunto:'Separação de equipamentos · {destino}',
+   campos:[['destino','Unidade / destino','Cocamar Maringá'],['tecnico','Técnico',''],['motivo','Motivo','Manutenção'],['itens','Itens e quantidades','1 DRY completo'],['deposito','Transferir para','06B (NF em nome do técnico)',['06B (NF em nome do técnico)','06 (NF direto para a unidade)']]],
+   corpo:'Olá, Douglas, tudo bem?\n\nPreciso da separação e transferência dos itens abaixo:\n\nDestino: {destino}\nTécnico: {tecnico}\nMotivo: {motivo}\nItens: {itens}\nTransferir para o depósito: {deposito}\n\nAssim que tiver as séries, me passa que eu abro o pedido.\n\nObrigado!'},
+  {id:'faturamento', nome:'Enviar pedido ao faturamento', canal:'E-mail', procs:['saida','retorno'], para:'faturamento', cc:'douglas',
+   assunto:'Pedido {pedido} · emissão de NF · {destino}',
+   campos:[['pedido','Nº do pedido (Aster)',''],['destino','Unidade / destino','Cocamar Maringá'],['tecnico','Técnico transportador',''],['series','Séries','']],
+   corpo:'Olá, tudo bem?\n\nSegue o pedido {pedido}, aberto no Aster, para emissão da NF.\n\nDestino: {destino}\nTécnico responsável pelo transporte: {tecnico}\nSéries: {series}\n\nAssim que a NF for emitida, me avisem para eu gerar o manifesto.\n\nObrigado!'},
+  {id:'retornoNF', nome:'Pedir retorno de NF', canal:'E-mail', procs:['retorno','nfs'], para:'faturamento', cc:'douglas',
+   assunto:'Retorno de NF {nf} · {unidade}',
+   campos:[['unidade','Unidade','Cocamar Maringá'],['nf','Número da NF',''],['series','Séries que retornaram',''],['ficou','Séries que ficaram na unidade','Nenhuma']],
+   corpo:'Bom dia!\n\nPor gentileza, poderiam emitir a NF de retorno referente à NF {nf}, da movimentação para manutenção na {unidade}?\n\nSéries que retornaram: {series}\nSéries que permaneceram na unidade: {ficou}\n\nFico à disposição.\n\nObrigado!'}
+];
+
+/* ===================== ASSISTENTE ===================== */
+const WIZ = {
+  start:{q:'O que está acontecendo?', opts:[
+    ['DRY parou de medir','Sem leitura nova no SGU ou na telemetria','parou'],
+    ['Erro ou travamento no painel API','Mensagem de erro, helicoide travado, posição inicial','api'],
+    ['Leitura estranha ou divergente','Diferente do NIR, da bancada ou do esperado','diverg'],
+    ['Cliente pediu documento ou cadastro','Integração, NR, documentação','r_integ'],
+    ['Precisa mandar equipamento com técnico','Separação, pedido, NF e manifesto','r_saida'],
+    ['Técnico voltou da manutenção','Regularizar NFs e estoque','r_retorno'],
+    ['Cliente ligou ou pediu algo (atendimento)','Contato, chamado, contrato novo, cotação de frete ou orçamento','hub']
+  ]},
+  hub:{q:'O que o cliente precisa?', opts:[
+    ['Só tirar dúvida ou acompanhar','Registrar o contato no Hub','r_hubContato'],
+    ['Técnico, troca ou visita','Abrir chamado','r_hubChamado'],
+    ['Contrato novo entrando','Novas Entregas','r_hubEntregas'],
+    ['Enviar equipamento por transportadora','Cotação de frete','r_hubCotacao'],
+    ['Orçamento','Só a Isabele','r_hubOrc']
+  ]},
+  parou:{q:'Você sabe se a linha da unidade está parada?', opts:[
+    ['Sim, confirmaram que está parada','Manutenção, sem grão, troca de produto','r_linhaParada'],
+    ['Não sei','Ainda não falei com ninguém','tempo']
+  ]},
+  tempo:{q:'Há quanto tempo está sem medir?', opts:[
+    ['Menos de 2 horas','','r_aguardar'],
+    ['Mais de 2 horas','','unidade']
+  ]},
+  unidade:{q:'Qual unidade?', opts:[
+    ['Cocamar Maringá','','r_contatoCocamar'],
+    ['Outra unidade','','r_contatoOutra']
+  ]},
+  confirmou:{q:'O que a unidade respondeu?', opts:[
+    ['A linha está parada','','r_linhaParada'],
+    ['A linha está rodando e o DRY não mede','','r_tecnico'],
+    ['Não responderam','','r_semResposta']
+  ]},
+  api:{q:'O SGU continua recebendo medições desse equipamento?', opts:[
+    ['Sim, mede normalmente','','r_apiHistorico'],
+    ['Não, parou de medir','','r_tecnico']
+  ]},
+  diverg:{q:'Comparado com o quê?', opts:[
+    ['Com o NIR (Cocamar)','','r_nir'],
+    ['Com equipamento de bancada da unidade','','r_bancada'],
+    ['Um salto isolado no gráfico','','r_salto']
+  ]},
+
+  r_aguardar:{fim:true,tipo:'info',titulo:'Ainda não precisa agir',
+    passos:['Parada curta é normal (limpeza, troca de produto, falta de grão).','Voltar a olhar em 30 a 60 minutos.','Se passar de 2 horas, volte ao assistente.']},
+  r_linhaParada:{fim:true,tipo:'info',titulo:'Sem ação. Só registrar.',
+    passos:['Anotar unidade, posição e motivo informado.','Quando a linha voltar, conferir se o DRY retomou as medições.','Se a linha voltou e o DRY não mede, volte ao assistente.']},
+  r_contatoCocamar:{fim:true,tipo:'warn',titulo:'Confirmar com a Cocamar',next:'confirmou',
+    passos:['Mandar mensagem ou ligar para Antônio José ou Silvanei.','Se não souberem informar, falar com o Dalton.','Usar a mensagem pronta, com a posição e o horário da última leitura.'],
+    contatos:['antonio','silvanei','dalton'],modelo:'operador',modeloProc:'cocamar',escada:1},
+  r_contatoOutra:{fim:true,tipo:'warn',titulo:'Confirmar com a unidade',next:'confirmou',
+    passos:['Pegar o responsável e o telefone na aba Status da planilha (colunas Q a U).','Usar a mensagem pronta, com a posição e o horário da última leitura.'],
+    modelo:'operador',modeloProc:'demais',link:'planilha',escada:1},
+  r_semResposta:{fim:true,tipo:'warn',titulo:'Insistir por outro canal',
+    passos:['Ligar, se a primeira tentativa foi mensagem, ou procurar outro contato da unidade.','Na Cocamar, o Dalton direciona.','Enquanto isso, olhar o painel API para ver se há erro registrado.','Sem resposta e com erro no painel: acionar a equipe de instalação.'],
+    contatos:['dalton'],link:'painelApi',next:'r_tecnico',nextLabel:'Sem resposta e com erro no painel',escada:1},
+  r_tecnico:{fim:true,tipo:'bad',titulo:'Acionar a equipe de instalação',
+    passos:['Abrir o painel API e copiar a mensagem e o horário do erro.','Mandar para a equipe de instalação com serial, unidade e o que já foi verificado (mensagem pronta).','Não executar comando remoto por conta própria.','Se a equipe não resolver, escalar ao Vilmar.'],
+    contatos:[...EQUIPE,'vilmar'],modelo:'equipe',modeloProc:'api',link:'painelApi',escada:2},
+  r_apiHistorico:{fim:true,tipo:'info',titulo:'Provavelmente é registro antigo',
+    passos:['Conferir o horário da mensagem. Se for antiga, não é problema atual.','Se o mesmo erro se repete com horário recente, mesmo medindo, avisar a equipe de instalação sem urgência.']},
+  r_nir:{fim:true,tipo:'warn',titulo:'Falar com o Wilson',
+    passos:['Anotar horário, produto e os valores do DRY e do NIR no mesmo momento.','Comparar médias de um período, não uma leitura só.','Enviar para o Wilson (mensagem pronta).','Não dizer à unidade que o DRY está errado antes da análise.'],
+    contatos:['wilson'],modelo:'wilson',modeloProc:'cocamar'},
+  r_bancada:{fim:true,tipo:'warn',titulo:'Juntar dados antes de concluir',
+    passos:['Perguntar à unidade: horário da amostra, produto, temperatura do grão e qual equipamento de bancada usaram.','A amostra da bancada precisa ser do mesmo momento e do mesmo fluxo que passou pelo DRY.','Diferença com grão quente ou recém-saído do secador é esperada.','Registrar tudo para análise do Gabriel na volta. Se a unidade cobrar urgência, acionar a equipe de instalação.'],
+    contatos:EQUIPE},
+  r_salto:{fim:true,tipo:'info',titulo:'Olhar o contexto',
+    passos:['Ver se houve troca de produto, de lote ou de secador nesse horário.','Uma leitura isolada não indica defeito. Avaliar a tendência das próximas horas.','Se o valor ficar fixo, zerado ou absurdo por muito tempo, tratar como “DRY parou de medir”.']},
+  r_hubContato:{fim:true,tipo:'info',titulo:'Registrar o contato no Hub',proc:'hubContato',link:'hub',passos:[]},
+  r_hubChamado:{fim:true,tipo:'info',titulo:'Abrir chamado no Hub',proc:'hubChamados',link:'hub',passos:[]},
+  r_hubEntregas:{fim:true,tipo:'info',titulo:'Cadastrar em Novas Entregas',proc:'hubEntregas',link:'hub',passos:[]},
+  r_hubCotacao:{fim:true,tipo:'info',titulo:'Simular a cotação de frete',proc:'hubCotacao',link:'hub',passos:[]},
+  r_hubOrc:{fim:true,tipo:'info',titulo:'Orçamento é com a Isabele',contatos:['isabele'],
+    passos:['Só a Isabele cria orçamentos. Quem cobre não cria.','Passar o pedido a ela e anotar unidade e contato do cliente para o Gabriel.']},
+  r_integ:{fim:true,tipo:'info',titulo:'Usar a aba Integração',proc:'integracao',link:'planilha',passos:[]},
+  r_saida:{fim:true,tipo:'info',titulo:'Enviar equipamento com técnico',proc:'saida',contatos:['douglas','faturamento'],passos:[]},
+  r_retorno:{fim:true,tipo:'info',titulo:'Regularizar depois da manutenção',proc:'retorno',contatos:['douglas','faturamento'],passos:[]}
+};
+
+/* =====================================================================
+   CÓDIGO. Não precisa editar daqui para baixo.
+   ===================================================================== */
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ic = (n, cls='') => `<svg class="${cls}" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-${n}"/></svg>`;
+const norm = s => String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+const store = {
+  get(k,d){ try{ const v=localStorage.getItem('dry_'+k); return v?JSON.parse(v):d; }catch{ return d; } },
+  set(k,v){ try{ localStorage.setItem('dry_'+k,JSON.stringify(v)); }catch{} }
+};
+// Celular gravado com 8 dígitos depois do DDD (formato antigo) ganha o 9 na frente.
+const cel = t => { const d=String(t).replace(/\D/g,''); return d.length===10 && /[6-9]/.test(d[2]) ? d.slice(0,2)+'9'+d.slice(2) : d; };
+const fmtTel = t => { const d=cel(t); return d.length===11?`(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`:d.length===10?`(${d.slice(0,2)}) ${d.slice(2,6)}-${d.slice(6)}`:t; };
+const wa = t => 'https://wa.me/55'+cel(t);
+const telHref = t => 'tel:+55'+cel(t);
+
+function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toast.h); toast.h=setTimeout(()=>t.classList.remove('show'),msg.length>30?4500:2200); }
+function copy(text,msg){
+  const ok=()=>toast(msg||'Copiado'), fail=()=>toast('Selecione e copie manualmente');
+  const fb=()=>{ const a=document.createElement('textarea'); a.value=text; a.setAttribute('readonly',''); a.style.cssText='position:fixed;opacity:0'; document.body.appendChild(a); a.select(); a.setSelectionRange(0,text.length); try{ document.execCommand('copy')?ok():fail(); }catch{ fail(); } a.remove(); };
+  if(navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).then(ok).catch(fb); else fb();
+}
+
+/* ---------- Pendências (só o que é obrigatório) ---------- */
+function renderPend(){
+  const p=[];
+  if(!CONFIG.links.painelApi) p.push('Link do painel Suporte DRY / API');
+  if(!CONFIG.links.planilha) p.push('Link da planilha Controle 999-DRY');
+  const el=$('#pend');
+  if(!p.length){ el.style.display='none'; return; }
+  el.style.display='block';
+  el.innerHTML=`<b>Configuração incompleta (${p.length})</b><span class="small muted"> · preencher no bloco CONFIG do arquivo</span><ul>${p.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`;
+}
+
+/* ---------- Navegação ---------- */
+const PAGES=[['hoje','Hoje','home','Hoje'],['assist','Algo parou?','help','Parou?'],['proc','Procedimentos','list','Passos'],['estoque','Estoque e NFs','box','Estoque'],['contatos','Contatos','user','Contatos']];
+function renderNav(){
+  $('#nav').innerHTML=PAGES.map(([id,n,i])=>`<button data-go="${id}">${ic(i)}<span>${n}</span></button>`).join('');
+  $('#tabbar').innerHTML=PAGES.map(([id,,i,c])=>`<button data-go="${id}">${ic(i)}<span>${c}</span></button>`).join('');
+}
+function go(id,replace){
+  if(!$('#p-'+id)) id='hoje';
+  $$('.page').forEach(p=>p.classList.toggle('on',p.id==='p-'+id));
+  $$('#nav [data-go],#tabbar [data-go]').forEach(b=>{ const on=b.dataset.go===id; b.classList.toggle('on',on); on?b.setAttribute('aria-current','page'):b.removeAttribute('aria-current'); });
+  try{ if(location.hash.slice(1)!==id) history[replace?'replaceState':'pushState'](null,'','#'+id); }catch{}
+  window.scrollTo({top:0});
+}
+
+/* ---------- Links ---------- */
+const LINKS=[
+  ['telemetriaCocamar','Telemetria Cocamar','Fábrica e Expedição LM','radar'],
+  ['sgu','SGU','Todas as unidades','radar'],
+  ['painelApi','Painel API','Erros e travamentos','cpu'],
+  ['planilha','Planilha 999-DRY','Status, Integração, NFs','table'],
+  ['fluxoEstoque','Fluxo de estoque','PDF do almoxarifado','file'],
+  ['hub','Motomco Hub','Contatos, chamados, entregas, cotação','table'],
+  ['orcamento','Orçamentos','Exige login @motomco.com.br','file']
+];
+const OPTIONAL=['fluxoEstoque','orcamento'];
+const linkLabel = k => LINKS.find(l=>l[0]===k)[1];
+function linkBtn(key,label,cls='btn sm'){
+  const url=CONFIG.links[key];
+  if(url) return `<a class="${cls}" href="${esc(url)}" target="_blank" rel="noopener">${ic('ext')} ${esc(label)}</a>`;
+  return OPTIONAL.includes(key) ? '' : `<span class="${cls}" style="opacity:.5">${ic('ext')} ${esc(label)} (link pendente)</span>`;
+}
+
+/* ---------- Hoje ---------- */
+const today=()=>new Date().toLocaleDateString('pt-BR');   // data local (toISOString é UTC e zerava às 21h)
+function renderDaily(){
+  let s=store.get('daily',{d:'',done:[]}); if(s.d!==today()) s={d:today(),done:[]};
+  $('#dayLabel').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'2-digit'});
+  $('#daily').innerHTML=DAILY.map((x,i)=>`<div class="check ${s.done.includes(i)?'done':''}" role="checkbox" tabindex="0" aria-checked="${s.done.includes(i)}" data-day="${i}"><span class="box">${ic('check')}</span><div><b>${esc(x.t)}</b><p>${esc(x.d)}</p></div></div>`).join('');
+  $('#dayBar').style.width=(s.done.length/DAILY.length*100)+'%';
+  $('#dayCount').textContent=`${s.done.length}/${DAILY.length}`;
+}
+function toggleDay(i){
+  let s=store.get('daily',{d:'',done:[]}); if(s.d!==today()) s={d:today(),done:[]};
+  s.done=s.done.includes(i)?s.done.filter(x=>x!==i):[...s.done,i];
+  store.set('daily',s); renderDaily(); $(`[data-day="${i}"]`).focus();
+  if(s.done.length===DAILY.length) toast('Rotina do dia concluída');
+}
+function renderUnits(){
+  const color={Operando:'var(--green)','Linha parada':'var(--muted)'};
+  $('#units').innerHTML=UNITS.map(u=>`<div class="glass pad unit">
+    <div class="unit-top"><h3 style="margin:0">${esc(u.nome)}</h3><span class="tag t-${u.cor}">${esc(u.nivel)}</span></div>
+    <p class="small muted">${esc(u.texto)}</p>
+    ${u.equip.map(e=>`<div class="eq"><span><code>${esc(e.serie)}</code> <span class="muted">· ${esc(e.local)}</span></span><span class="small"><i class="dot" style="background:${color[e.status]||'var(--amber)'}"></i>${esc(e.status)}</span></div>`).join('')}
+    <div class="row">${linkBtn(u.link,u.linkLabel)}</div></div>`).join('');
+}
+function renderLive(){
+  const url=CONFIG.links.telemetriaCocamar, el=$('#aoVivo');
+  if(!url) return el.remove();
+  el.innerHTML=`<div class="row" style="justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+    <div style="flex:1 1 280px"><h2 style="margin:0 0 4px">Cocamar Maringá ao vivo</h2>
+    <p class="small muted">Olhe a ÚLTIMA MEDIDA da Fábrica (SEMT-00119) e da Expedição LM (SEMT-00118). Passou de 2 h, abra o assistente. No celular, role dentro do quadro ou use Tela cheia.</p></div>
+    ${linkBtn('telemetriaCocamar','Tela cheia')}</div>
+    <div class="note info" style="margin:0 0 12px">${ic('info')}<div>A data vem como mês/dia/ano, hora em AM/PM: <b>10/02/26, 08:04 PM</b> é 2 de outubro às 20h04.</div></div>
+    <iframe class="live" src="${esc(url)}" title="Telemetria da Cocamar Maringá" loading="lazy"></iframe>`;
+}
+function renderQuick(){
+  $('#quick').innerHTML=LINKS.map(([k,n,d,i])=>{
+    const url=CONFIG.links[k]; if(!url) return '';
+    return `<a class="quick" href="${esc(url)}" target="_blank" rel="noopener"><span class="ic">${ic(i)}</span><div><b>${esc(n)}</b><span>${esc(d)}</span></div></a>`;
+  }).join('');
+}
+
+/* ---------- Contatos ---------- */
+function contactCard(id,compact){
+  const c=CONTACTS[id]; if(!c) return '';
+  const tel=c.tel, mail=c.email; let act='';
+  if(tel) act+=`<a class="btn sm" href="${telHref(tel)}">${ic('phone')} Ligar</a><a class="btn sm" href="${wa(tel)}" target="_blank" rel="noopener">WhatsApp</a><button class="btn sm" data-copy="${esc(fmtTel(tel))}">${ic('copy')} Copiar</button>`;
+  if(mail) act+=`<a class="btn sm" href="mailto:${esc(mail)}">${ic('mail')} E-mail</a><button class="btn sm" data-copy="${esc(mail)}">${ic('copy')} Copiar</button>`;
+  if(compact) return `<div class="crow"><div><b>${esc(c.nome)}</b><small>${esc(c.papel)}${tel?' · '+fmtTel(tel):''}${mail?' · '+esc(mail):''}</small></div><div class="row">${act}</div></div>`;
+  return `<div class="glass pad contact" id="c-${id}"><span class="role">${esc(c.papel)}</span><h3 style="margin:0">${esc(c.nome)}</h3>${c.obs?`<p class="small muted">${esc(c.obs)}</p>`:''}${tel?`<span class="val">${fmtTel(tel)}</span>`:''}${mail?`<span class="small">${esc(mail)}</span>`:''}<div class="row">${act}</div></div>`;
+}
+function renderContacts(){
+  $('#contactGroups').innerHTML=GROUP_ORDER.map(g=>{
+    const ids=Object.keys(CONTACTS).filter(id=>CONTACTS[id].grupo===g);
+    return `<h2 class="section" style="margin-bottom:${GROUP_NOTE[g]?4:14}px">${esc(g)}</h2>${GROUP_NOTE[g]?`<p class="small muted" style="margin-bottom:14px">${esc(GROUP_NOTE[g])}</p>`:''}<div class="grid g3">${ids.map(id=>contactCard(id)).join('')}</div>`;
+  }).join('');
+}
+
+/* ---------- Procedimentos ---------- */
+const procCats=new Set(); const tplOpen={}; const tplVals={};
+function procHTML(p){
+  const tp=TEMPLATES.filter(t=>t.procs.includes(p.id));
+  return `<details class="proc" id="proc-${p.id}"><summary><div><b>${esc(p.titulo)}</b><small>${esc(p.resumo)}</small></div><span class="row"><span class="tag t-${p.tag[1]}">${esc(p.tag[0])}</span>${ic('chev','chev')}</span></summary>
+  <div class="body"><ol class="steps">${p.passos.map(([t,d])=>`<li><b>${esc(t)}</b><span>${esc(d)}</span></li>`).join('')}</ol>
+  ${p.nota?`<div class="note warn">${ic('alert')}<div>${esc(p.nota)}</div></div>`:''}
+  ${p.links?`<div class="row" style="margin-top:14px">${p.links.map(k=>linkBtn(k,linkLabel(k))).join('')}</div>`:''}
+  ${tp.length?`<h3 style="margin-top:22px">Mensagens prontas</h3><div class="tpl-list">${tp.map(t=>`<button class="chip" data-tpl="${p.id}|${t.id}">${esc(t.nome)}</button>`).join('')}</div><div class="tplbox" data-pid="${p.id}"></div>`:''}
+  </div></details>`;
+}
+function renderProcs(){
+  const cats=[...new Set(PROCS.map(p=>p.cat))];
+  $('#chips').innerHTML=`<button class="chip ${procCats.size?'':'on'}" aria-pressed="${!procCats.size}" data-cat="*">Todas</button>`+cats.map(c=>`<button class="chip ${procCats.has(c)?'on':''}" aria-pressed="${procCats.has(c)}" data-cat="${esc(c)}">${esc(c)}</button>`).join('');
+  $('#procs').innerHTML=PROCS.filter(p=>!procCats.size||procCats.has(p.cat)).map(procHTML).join('');
+  Object.entries(tplOpen).forEach(([pid,tid])=>showTpl(pid,tid,true));
+}
+function openProc(id,tid){
+  procCats.clear(); renderProcs(); go('proc');
+  const el=$('#proc-'+id); if(!el) return;
+  el.open=true; el.classList.add('flash');
+  if(tid) showTpl(id,tid,true);
+  setTimeout(()=>(tid?el.querySelector('.tplbox'):el).scrollIntoView({behavior:'smooth',block:'start'}),60);
+}
+
+/* ---------- Mensagens prontas ---------- */
+function tplText(t,str,mark){
+  const v=tplVals[t.id]||{};
+  return str.replace(/\{(\w+)\}/g,(_,k)=>{
+    const val=(v[k]??'').trim(); const lbl=(t.campos.find(c=>c[0]===k)||[,k])[1];
+    if(val) return mark?esc(val):val;
+    return mark?`<mark>[${esc(lbl)}]</mark>`:`[${lbl}]`;
+  });
+}
+function showTpl(pid,tid,keep){
+  const box=$(`.tplbox[data-pid="${pid}"]`); if(!box) return;
+  tplOpen[pid]=tid;
+  const t=TEMPLATES.find(x=>x.id===tid);
+  const v=tplVals[tid]=tplVals[tid]||{};
+  t.campos.forEach(([k,,,opts])=>{ if(v[k]===undefined) v[k]=opts?opts[0]:''; });
+  $$(`[data-tpl^="${pid}|"]`).forEach(b=>b.classList.toggle('on',b.dataset.tpl===pid+'|'+tid));
+  const para=t.para?CONTACTS[t.para].email:'', cc=t.cc?CONTACTS[t.cc].email:'';
+  box.dataset.tid=tid;
+  box.innerHTML=`
+    <div class="row" style="justify-content:space-between;margin-bottom:14px"><h3 style="margin:0">${esc(t.nome)}</h3><span class="tag t-blue">${esc(t.canal)}</span></div>
+    <div class="form">${t.campos.map(([k,l,ph,opts])=>`<div class="field"><label>${esc(l)}<br>${
+      opts?`<select data-field="${k}">${opts.map(o=>`<option ${o===v[k]?'selected':''}>${esc(o)}</option>`).join('')}</select>`
+          :`<input data-field="${k}" value="${esc(v[k])}" placeholder="${ph?'ex.: '+esc(ph):''}">`}</label></div>`).join('')}</div>
+    ${para?`<p class="small muted" style="margin-top:14px">Para: <b>${esc(para)}</b>${cc?` · Cópia: <b>${esc(cc)}</b>`:''}</p>`:''}
+    ${t.assunto?`<div class="preview pv-subj" style="margin-top:10px;padding:10px 14px"></div>`:''}
+    <div class="preview pv-body"></div>
+    <div class="row" style="margin-top:14px">
+      <button class="btn primary" data-tplcopy="body">${ic('copy')} Copiar mensagem</button>
+      ${t.assunto?`<button class="btn" data-tplcopy="subj">Copiar assunto</button>`:''}
+      ${t.canal==='E-mail'?`<button class="btn" data-tplmail>${ic('mail')} Abrir no e-mail</button>`:''}
+      ${t.canal==='WhatsApp'?`<button class="btn" data-tplwa>Abrir no WhatsApp</button>`:''}
+    </div>`;
+  updTpl(box);
+  if(!keep) box.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function updTpl(box){
+  const t=TEMPLATES.find(x=>x.id===box.dataset.tid);
+  box.querySelector('.pv-body').innerHTML=tplText(t,t.corpo,true);
+  const s=box.querySelector('.pv-subj'); if(s) s.innerHTML=tplText(t,t.assunto,true);
+  box.querySelectorAll('input[data-field]').forEach(i=>i.classList.toggle('vazio',!i.value.trim()));
+}
+// Campos usados no texto que ainda estão vazios (aviso ao copiar ou enviar).
+function tplFaltam(t){
+  const v=tplVals[t.id]||{}, usados=(t.corpo+(t.assunto||'')).match(/\{\w+\}/g).map(x=>x.slice(1,-1));
+  return t.campos.filter(([k])=>usados.includes(k) && !(v[k]||'').trim()).map(c=>c[1]);
+}
+const crlf = s => encodeURIComponent(s.replace(/\n/g,'\r\n'));
+function mailUrl(box){
+  const t=TEMPLATES.find(x=>x.id===box.dataset.tid);
+  let url=`mailto:${t.para?CONTACTS[t.para].email:''}?subject=${crlf(tplText(t,t.assunto||'',false))}`;
+  if(t.cc) url+=`&cc=${CONTACTS[t.cc].email}`;
+  return url+`&body=${crlf(tplText(t,t.corpo,false))}`;
+}
+
+/* ---------- Estoque ---------- */
+let flowId='pedido';
+function renderFlow(){
+  $('#flowTabs').innerHTML=FLOWS.map(f=>`<button class="chip ${f.id===flowId?'on':''}" data-flow="${f.id}">${esc(f.nome)}</button>`).join('');
+  const f=FLOWS.find(x=>x.id===flowId);
+  $('#flowView').innerHTML=f.mapa?mapaHTML(f):`<div class="flow">${f.deps.map(([n,d],i)=>`${i?`<div class="arrow">${ic('arrow')}</div>`:''}<div class="dep"><div class="n">${esc(n)}</div><small>${esc(d)}</small></div>`).join('')}</div><p>${esc(f.texto)}</p>`;
+  $('#flowLinks').innerHTML=linkBtn('fluxoEstoque','Fluxo original (PDF)')+linkBtn('planilha','Planilha 999-DRY');
+}
+
+// Mapa dos depósitos: posição de cada caixa e traçado de cada seta (com o ponto do número).
+const MAPA_POS={'13':[60,60],'06B':[210,60],'06':[360,60],'14':[210,230]};
+const MAPA_SETAS={'13>06B':['M104,60 L166,60',[135,60]],'06B>06':['M254,60 L316,60',[285,60]],'13>06':['M60,32 C60,-14 360,-14 360,32',[210,-2]],
+  '06B>14':['M210,88 L210,202',[210,145]],'06>14':['M342,88 L254,206',[298,147]],'14>13':['M166,206 L78,88',[122,147]]};
+function mapaHTML(f){
+  const on=new Set(f.mapa.map(([a,b])=>a+'>'+b)), ativos=new Set(f.mapa.flatMap(([a,b])=>[a,b]));
+  const seta=id=>`<marker id="${id}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="10" markerHeight="10" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0L10,5L0,10z" class="ponta ${id==='setaOn'?'on':''}"/></marker>`;
+  return `<svg class="mapa" viewBox="0 -24 420 290" role="img" aria-label="${esc(f.nome+': '+f.mapa.map(([a,b,,t])=>`${a} para ${b}, ${t}`).join('; '))}">
+    <defs>${seta('seta')}${seta('setaOn')}</defs>
+    ${Object.entries(MAPA_SETAS).map(([k,[d]])=>`<path d="${d}" class="ar ${on.has(k)?'on':''}" marker-end="url(#${on.has(k)?'setaOn':'seta'})"/>`).join('')}
+    ${Object.entries(MAPA_POS).map(([n,[x,y]])=>`<g class="no ${ativos.has(n)?'on':''}"><rect x="${x-42}" y="${y-26}" width="84" height="52" rx="12"/><text x="${x}" y="${y+8}">${n}</text></g>`).join('')}
+    ${f.mapa.map(([a,b,n])=>{ const [x,y]=MAPA_SETAS[a+'>'+b][1]; return `<g class="badge"><circle cx="${x}" cy="${y}" r="12"/><text x="${x}" y="${y+4.5}">${n}</text></g>`; }).join('')}
+  </svg>
+  <ol class="mapa-passos">${f.mapa.map(([a,b,n,t])=>`<li><span class="num">${n}</span><span><b>${a} → ${b}</b> <span class="muted">${esc(t)}</span></span></li>`).join('')}</ol>
+  <div class="legenda">${Object.entries(DEPOSITOS).map(([n,d])=>`<span class="${ativos.has(n)?'on':''}"><b>${n}</b> ${esc(d)}</span>`).join('')}</div>
+  <p>${esc(f.texto)}</p>`;
+}
+
+/* ---------- Assistente ---------- */
+let trail=['start'];
+const ESCADA=['Unidade','Equipe de instalação','Vilmar (último caso)'];
+function renderWiz(){
+  const id=trail[trail.length-1], n=WIZ[id];
+  // Caminho com as respostas dadas; clicar numa resposta volta à pergunta dela.
+  const resp=(de,para)=>{ const o=(WIZ[de].opts||[]).find(o=>o[2]===para); return o?o[0]:(WIZ[de].nextLabel||'Já falei com a unidade'); };
+  const crumbs=trail.length>1?`<div class="wiz-trail"><button data-wizback>← Voltar</button><button data-wizreset>Recomeçar</button></div>
+    <p class="wiz-path">Suas respostas: ${trail.slice(1).map((s,i)=>`<button data-wizto="${i}" title="Mudar esta resposta">${esc(resp(trail[i],s))}</button>`).join('<span class="sep">›</span>')}</p>`:'';
+  if(!n.fim){
+    $('#wizard').innerHTML=crumbs+`<p class="wiz-q" tabindex="-1">${esc(n.q)}</p><div class="opts">${n.opts.map(([l,d,to])=>`<button class="opt" data-wiz="${to}"><b>${esc(l)}</b>${d?`<span>${esc(d)}</span>`:''}</button>`).join('')}</div>`;
+    return;
+  }
+  const cls=n.tipo, icn=n.tipo==='info'?'info':'alert';
+  let h=crumbs+`<div class="result"><div class="note ${cls}" style="margin-top:0">${ic(icn)}<div><b style="font-size:17px" tabindex="-1">${esc(n.titulo)}</b></div></div>`;
+  if(n.escada) h+=`<ol class="escada" aria-label="Ordem de acionamento">${ESCADA.map((x,i)=>`<li class="${i+1<n.escada?'feito':i+1===n.escada?'agora':''}"${i+1===n.escada?' aria-current="step"':''}>${esc(x)}</li>`).join('')}</ol>`;
+  if(n.passos.length) h+=`<ol>${n.passos.map(p=>`<li>${esc(p)}</li>`).join('')}</ol>`;
+  const btns=[];
+  if(n.proc) btns.push(`<button class="btn primary" data-openproc="${n.proc}">${ic('list')} Ver passo a passo</button>`);
+  if(n.modelo) btns.push(`<button class="btn ${n.proc?'':'primary'}" data-openproc="${n.modeloProc}" data-tid="${n.modelo}">${ic('mail')} Abrir mensagem pronta</button>`);
+  if(n.link) btns.push(linkBtn(n.link,linkLabel(n.link),'btn'));
+  if(btns.length) h+=`<div class="row" style="margin-top:16px">${btns.join('')}</div>`;
+  if(n.contatos) h+=`<h3 class="section">Com quem falar</h3>${n.contatos.map(c=>contactCard(c,true)).join('')}`;
+  if(n.next) h+=`<div class="section" style="border-top:1px solid var(--line);padding-top:20px"><button class="btn primary" data-wiz="${n.next}">${esc(n.nextLabel||'Já falei com a unidade')} ${ic('arrow')}</button></div>`;
+  $('#wizard').innerHTML=h+'</div>';
+}
+
+/* ---------- Busca global ---------- */
+function buildIndex(){
+  const it=[];
+  PROCS.forEach(p=>it.push({k:'proc',id:p.id,tipo:'Procedimento',cor:'green',titulo:p.titulo,sub:p.resumo,
+    txt:[p.titulo,p.resumo,p.cat,p.nota||'',...p.passos.flat()].join(' '),passos:p.passos}));
+  TEMPLATES.forEach(t=>it.push({k:'tpl',id:t.id,tipo:'Mensagem',cor:'blue',titulo:t.nome,sub:t.canal+' pronto para copiar',txt:[t.nome,t.canal,t.assunto||'',t.corpo].join(' ')}));
+  Object.entries(CONTACTS).forEach(([id,c])=>it.push({k:'contact',id,tipo:'Contato',cor:'amber',titulo:c.nome,sub:c.papel+(c.tel?' · '+fmtTel(c.tel):'')+(c.email?' · '+c.email:''),txt:[c.nome,c.papel,c.obs||'',c.grupo,c.tel||'',c.tel?fmtTel(c.tel):'',c.email||''].join(' ')}));
+  FLOWS.forEach(f=>it.push({k:'flow',id:f.id,tipo:'Estoque e NF',cor:'red',titulo:f.nome,sub:f.texto,txt:[f.nome,f.texto,...(f.deps||f.mapa).flat(),...(f.mapa?Object.values(DEPOSITOS):[])].join(' ')}));
+  return it;
+}
+function runSearch(){
+  const raw=$('#gq').value, q=norm(raw).trim(), box=$('#gres');
+  if(!q){ box.hidden=true; return; }
+  const words=q.split(/\s+/);
+  const noTitulo=i=>words.every(w=>norm(i.titulo).includes(w));   // quem tem a palavra no título vem primeiro
+  const hits=buildIndex().filter(i=>words.every(w=>norm(i.txt).includes(w))).sort((x,y)=>noTitulo(y)-noTitulo(x)).slice(0,12);
+  box.hidden=false;
+  box.innerHTML=hits.length?hits.map(h=>{
+    let sub=h.sub;
+    if(h.passos){ const m=h.passos.find(([t,d])=>words.every(w=>norm(t+' '+d).includes(w))); if(m && !words.every(w=>norm(h.titulo+' '+h.sub).includes(w))) sub='Passo: '+m[0]; }
+    return `<button class="hit" data-hit="${h.k}|${h.id}"><span class="tag t-${h.cor}">${h.tipo}</span><span><b>${esc(h.titulo)}</b><small>${esc(sub)}</small></span></button>`;
+  }).join(''):`<div class="empty">Nada encontrado para “${esc(raw)}”. Tente outra palavra.</div>`;
+}
+function openHit(k,id){
+  $('#gres').hidden=true; $('#gq').value='';
+  if(k==='proc') return openProc(id);
+  if(k==='tpl'){ const t=TEMPLATES.find(x=>x.id===id); return openProc(t.procs[0],id); }
+  if(k==='flow'){ flowId=id; renderFlow(); return go('estoque'); }
+  if(k==='contact'){ go('contatos'); setTimeout(()=>{ const el=$('#c-'+id); if(el){ el.scrollIntoView({behavior:'smooth',block:'center'}); el.classList.add('flash'); setTimeout(()=>el.classList.remove('flash'),1500); } },60); }
+}
+
+/* ---------- Eventos ---------- */
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.gbar')) $('#gres').hidden=true;
+  const t=e.target.closest('button,[data-day],a'); if(!t) return;
+  const d=t.dataset;
+  if(d.hit){ const [k,id]=d.hit.split('|'); return openHit(k,id); }
+  if(d.go) return go(d.go);
+  if(d.day!==undefined) return toggleDay(+d.day);
+  if(d.copy!==undefined) return copy(d.copy);
+  if(d.cat){ if(d.cat==='*') procCats.clear(); else procCats.has(d.cat)?procCats.delete(d.cat):procCats.add(d.cat); renderProcs(); return $(`[data-cat="${CSS.escape(d.cat)}"]`).focus(); }
+  if(d.flow){ flowId=d.flow; renderFlow(); return $(`[data-flow="${d.flow}"]`).focus(); }
+  if(d.tpl){ const [pid,tid]=d.tpl.split('|'); return showTpl(pid,tid); }
+  if(d.tplcopy||d.tplmail!==undefined||d.tplwa!==undefined){
+    const box=t.closest('.tplbox'), tp=TEMPLATES.find(x=>x.id===box.dataset.tid), f=tplFaltam(tp);
+    const msg=f.length?`Faltou preencher: ${f.join(', ')}`:'';
+    if(d.tplcopy) return copy(tplText(tp,d.tplcopy==='subj'?tp.assunto:tp.corpo,false), msg&&'Copiado. '+msg);
+    if(msg) toast(msg);
+    if(d.tplwa!==undefined) return window.open('https://wa.me/?text='+encodeURIComponent(tplText(tp,tp.corpo,false)),'_blank','noopener');
+    return location.href=mailUrl(box);
+  }
+  if(d.wiz||d.wizback!==undefined||d.wizreset!==undefined||d.wizto!==undefined){
+    if(d.wiz) trail.push(d.wiz); else if(d.wizback!==undefined) trail.pop(); else if(d.wizto!==undefined) trail=trail.slice(0,+d.wizto+1); else trail=['start'];
+    renderWiz(); $('#wizard [tabindex="-1"]').focus({preventScroll:true});
+    return $('#wizard').scrollIntoView({behavior:'smooth',block:'start'});
+  }
+  if(d.openproc) return openProc(d.openproc,d.tid);
+  if(d.theme!==undefined){ document.body.classList.toggle('light'); store.set('theme',document.body.classList.contains('light')?'light':'dark'); }
+});
+document.addEventListener('keydown',e=>{
+  if((e.key==='Enter'||e.key===' ') && e.target.dataset && e.target.dataset.day!==undefined){ e.preventDefault(); toggleDay(+e.target.dataset.day); }
+  if(e.key==='Escape'){ $('#gres').hidden=true; }
+  if(e.key==='Enter' && e.target.id==='gq'){ const h=$('#gres .hit'); if(h){ e.preventDefault(); h.click(); } }
+  if(e.key==='/' && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)){ e.preventDefault(); $('#gq').focus(); }
+});
+document.addEventListener('input',e=>{
+  if(e.target.id==='gq') return runSearch();
+  if(e.target.dataset.field){ const box=e.target.closest('.tplbox'); tplVals[box.dataset.tid][e.target.dataset.field]=e.target.value; updTpl(box); }
+});
+$('#gq').addEventListener('focus',()=>{ if($('#gq').value) runSearch(); });
+// Tab para fora da busca fecha os resultados (relatedTarget nulo = clique, já tratado no click).
+$('.gbar').addEventListener('focusout',e=>{ if(e.relatedTarget && !e.currentTarget.contains(e.relatedTarget)) $('#gres').hidden=true; });
+window.addEventListener('hashchange',()=>go(location.hash.slice(1),true));
+// Guia aberto de um dia para o outro: zera a rotina ao voltar para a aba.
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden) renderDaily(); });
+
+/* ---------- Início ---------- */
+(function init(){
+  const th=store.get('theme',null);
+  if(th==='light' || (!th && window.matchMedia('(prefers-color-scheme: light)').matches)) document.body.classList.add('light');
+  const ref=`Situação de ${CONFIG.dataReferencia}${CONFIG.coberturaAte?` · cobertura até ${CONFIG.coberturaAte}`:''}`;
+  $('#refHead').textContent=ref; $('#refSide').textContent=ref;
+  renderPend(); renderNav(); renderDaily(); renderLive(); renderUnits(); renderQuick();
+  renderContacts(); renderProcs(); renderFlow(); renderWiz();
+  go(location.hash.slice(1)||'hoje',true);
+})();
+</script>
+</body>
+</html>

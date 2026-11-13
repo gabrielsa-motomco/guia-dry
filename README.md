@@ -1,2 +1,3 @@
-# guia-dry
-Guia de cobertura DRY (página estática)
+# Guia de cobertura DRY
+
+Página estática (um único index.html). Publicada pelo GitHub Pages.
