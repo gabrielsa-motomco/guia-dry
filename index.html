@@ -249,9 +249,12 @@ body.light .alarm{background:linear-gradient(120deg,rgba(95,143,18,.12),rgba(31,
 .preview{white-space:pre-wrap;padding:16px;border-radius:var(--r-md);border:1px solid var(--line);background:var(--bg);font-size:14px;line-height:1.75;margin-top:14px}
 .preview mark{background:var(--amber-bg);color:var(--amber);border-radius:4px;padding:0 3px}
 
-.contact{display:flex;flex-direction:column;gap:8px}
+.contact{display:flex;flex-direction:column;gap:8px;min-width:0}
+.contact span,.contact p,.contact h3,.crow small{overflow-wrap:anywhere}
+.crow>div:first-child{min-width:0;flex:1 1 200px}
 .contact .role{font-size:12.5px;color:var(--muted);font-weight:600}
 .contact .val{font-weight:700;font-size:16px}
+.contact .mail{font-size:13px}
 .crow{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px 14px;border-radius:var(--r-md);border:1px solid var(--line);background:var(--glass-strong);margin-bottom:8px}
 .crow small{display:block;color:var(--muted);font-size:12.5px}
 .flash{animation:flash 1.4s ease}
@@ -907,10 +910,10 @@ function renderQuick(){
 function contactCard(id,compact){
   const c=CONTACTS[id]; if(!c) return '';
   const tel=c.tel, mail=c.email; let act='';
-  if(tel) act+=`<a class="btn sm" href="${telHref(tel)}">${ic('phone')} Ligar</a><a class="btn sm" href="${wa(tel)}" target="_blank" rel="noopener">WhatsApp</a><button class="btn sm" data-copy="${esc(fmtTel(tel))}">${ic('copy')} Copiar</button>`;
-  if(mail) act+=`<a class="btn sm" href="mailto:${esc(mail)}">${ic('mail')} E-mail</a><button class="btn sm" data-copy="${esc(mail)}">${ic('copy')} Copiar</button>`;
-  if(compact) return `<div class="crow"><div><b>${esc(c.nome)}</b><small>${esc(c.papel)}${tel?' · '+fmtTel(tel):''}${mail?' · '+esc(mail):''}</small></div><div class="row">${act}</div></div>`;
-  return `<div class="glass pad contact" id="c-${id}"><span class="role">${esc(c.papel)}</span><h3 style="margin:0">${esc(c.nome)}</h3>${c.obs?`<p class="small muted">${esc(c.obs)}</p>`:''}${tel?`<span class="val">${fmtTel(tel)}</span>`:''}${mail?`<span class="small">${esc(mail)}</span>`:''}<div class="row">${act}</div></div>`;
+  if(tel) act+=`<a class="btn sm" href="${telHref(tel)}">${ic('phone')} Ligar</a><a class="btn sm" href="${wa(tel)}" target="_blank" rel="noopener">WhatsApp</a>`;
+  if(mail) act+=`<a class="btn sm" href="mailto:${esc(mail)}">${ic('mail')} E-mail</a>`;
+  if(compact) return `<div class="crow"><div><b>${esc(c.nome)}</b><small>${esc(c.papel)}${tel?' · '+fmtTel(tel):''}${mail?' · '+esc(mail).replace('@','<wbr>@'):''}</small></div><div class="row">${act}</div></div>`;
+  return `<div class="glass pad contact" id="c-${id}"><span class="role">${esc(c.papel)}</span><h3 style="margin:0">${esc(c.nome)}</h3>${c.obs?`<p class="small muted">${esc(c.obs)}</p>`:''}${tel?`<span class="val">${fmtTel(tel)}</span>`:''}${mail?`<span class="small mail">${esc(mail).replace('@','<wbr>@')}</span>`:''}<div class="row">${act}</div></div>`;
 }
 function renderContacts(){
   $('#contactGroups').innerHTML=GROUP_ORDER.map(g=>{
