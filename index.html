@@ -313,6 +313,8 @@ body.light .alarm{background:linear-gradient(120deg,rgba(95,143,18,.12),rgba(31,
         <button class="btn primary" data-go="assist"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-help"/></svg> Abrir assistente</button>
       </div>
 
+      <div id="manualCampo"></div>
+
       <div class="glass pad section" id="aoVivo"></div>
 
       <div class="grid g2 section">
@@ -416,7 +418,8 @@ body.light .alarm{background:linear-gradient(120deg,rgba(95,143,18,.12),rgba(31,
    Link vazio ('') fica oculto ou aparece como pendência no topo.
    ===================================================================== */
 const CONFIG = {
-  dataReferencia: '27/10/2026',   // atualizar no dia em que sair de férias
+  atualizadoEm:   '13/11/2026',   // data da última alteração do guia (atualizar a cada mudança)
+  dataReferencia: '27/10/2026',   // retrato da situação das unidades: atualizar no dia em que sair de férias
   coberturaAte:   '',             // ex.: '24/11/2026'
   links: {
     sgu:               'https://sgu.motomco.com.br/',
@@ -424,6 +427,9 @@ const CONFIG = {
     painelApi:         'https://api.motomco.com.br/supportdry',
     planilha:          'https://docs.google.com/spreadsheets/d/1Z2pnhFNQgkj8zDXp7V6Fb302_EARhkysphG2zp4Lcn8/edit?usp=sharing',
     fluxoEstoque:      '',          // opcional: link do PDF no Drive. Vazio = botão some.
+    aster:             'https://aster.gruposps.com.br/Login',   // pedido de compra
+    egs:               'https://app1.egssistemas.com.br/login', // manifesto
+    manualCampo:       '',          // manual do app Motomco Campo (link do Drive ou GitHub). Vazio = aviso some.
     hub:               'https://script.google.com/a/macros/motomco.com.br/s/AKfycbyCx43LDzc9-RC6mzdokVV0MiVLcCVxeTwTPAiOjRDsdpfKWw3lGaxvyeK1u-S_KMqI/exec',   // Motomco Hub (exige login @motomco.com.br)
     orcamento:         ''           // reservado: sistema de orçamento (Apps Script, login @motomco.com.br). Vazio = botão some.
   }
@@ -537,7 +543,7 @@ const PROCS = [
     ['Não repassar login e senha','Os acessos ficam na planilha. Não enviar por e-mail nem WhatsApp.']
    ]},
   {id:'saida', cat:'Estoque e NF', tag:['Essencial','green'], titulo:'Enviar equipamento com técnico',
-   resumo:'Separação, pedido no Aster, NF pelo faturamento e manifesto no EGS.',
+   resumo:'Separação, pedido no Aster, NF pelo faturamento e manifesto no EGS.', links:['aster','egs'],
    passos:[
     ['Receber a demanda','Técnico (ou Douglas) informa técnico, destino, motivo, itens e quantidades.'],
     ['Pedir a separação ao Douglas','Ele separa e transfere do depósito 13 para o 06B (agente de campo). Mensagem pronta abaixo.'],
@@ -549,7 +555,7 @@ const PROCS = [
     ['Anotar o que foi emitido','Pedido, NF, técnico, destino e séries, para o Gabriel lançar na planilha na volta.']
    ]},
   {id:'retorno', cat:'Estoque e NF', tag:['Essencial','green'], titulo:'Depois da manutenção',
-   resumo:'Retorno da NF do técnico e NF nova se algo ficou na unidade.',
+   resumo:'Retorno da NF do técnico e NF nova se algo ficou na unidade.', links:['aster'],
    passos:[
     ['Confirmar com o técnico o que voltou e o que ficou','Lista de séries nos dois casos.'],
     ['Pedir o retorno da NF do técnico','Para o que voltou. Mensagem pronta abaixo.'],
@@ -856,9 +862,11 @@ const LINKS=[
   ['planilha','Planilha 999-DRY','Status, Integração, NFs','table'],
   ['fluxoEstoque','Fluxo de estoque','PDF do almoxarifado','file'],
   ['hub','Motomco Hub','Contatos, chamados, entregas, cotação','table'],
+  ['aster','Aster','Pedido de compra (login)','file'],
+  ['egs','EGS','Manifesto (login)','file'],
   ['orcamento','Orçamentos','Exige login @motomco.com.br','file']
 ];
-const OPTIONAL=['fluxoEstoque','orcamento'];
+const OPTIONAL=['fluxoEstoque','orcamento','manualCampo'];
 const linkLabel = k => LINKS.find(l=>l[0]===k)[1];
 function linkBtn(key,label,cls='btn sm'){
   const url=CONFIG.links[key];
@@ -888,6 +896,13 @@ function renderUnits(){
     <p class="small muted">${esc(u.texto)}</p>
     ${u.equip.map(e=>`<div class="eq"><span><code>${esc(e.serie)}</code> <span class="muted">· ${esc(e.local)}</span></span><span class="small"><i class="dot" style="background:${color[e.status]||'var(--amber)'}"></i>${esc(e.status)}</span></div>`).join('')}
     <div class="row">${linkBtn(u.link,u.linkLabel)}</div></div>`).join('');
+}
+function renderManual(){
+  const url=CONFIG.links.manualCampo, el=$('#manualCampo');
+  if(!url) return el.remove();
+  el.innerHTML=`<div class="note info" style="margin-top:16px;align-items:center;justify-content:space-between;flex-wrap:wrap">
+    <div style="display:flex;gap:12px;flex:1 1 240px">${ic('info')}<div><b>Manual do Motomco Campo</b><br><span class="small muted">App dos técnicos: dúvida sobre relatório, foto ou preenchimento em campo.</span></div></div>
+    ${linkBtn('manualCampo','Abrir manual','btn primary')}</div>`;
 }
 function renderLive(){
   const url=CONFIG.links.telemetriaCocamar, el=$('#aoVivo');
@@ -1135,9 +1150,9 @@ document.addEventListener('visibilitychange',()=>{ if(!document.hidden) renderDa
 (function init(){
   const th=store.get('theme',null);
   if(th==='light' || (!th && window.matchMedia('(prefers-color-scheme: light)').matches)) document.body.classList.add('light');
-  const ref=`Situação de ${CONFIG.dataReferencia}${CONFIG.coberturaAte?` · cobertura até ${CONFIG.coberturaAte}`:''}`;
+  const ref=`${CONFIG.atualizadoEm?`Guia atualizado em ${CONFIG.atualizadoEm} · `:''}Situação de ${CONFIG.dataReferencia}${CONFIG.coberturaAte?` · cobertura até ${CONFIG.coberturaAte}`:''}`;
   $('#refHead').textContent=ref; $('#refSide').textContent=ref;
-  renderPend(); renderNav(); renderDaily(); renderLive(); renderUnits(); renderQuick();
+  renderPend(); renderNav(); renderDaily(); renderManual(); renderLive(); renderUnits(); renderQuick();
   renderContacts(); renderProcs(); renderFlow(); renderWiz();
   go(location.hash.slice(1)||'hoje',true);
 })();
